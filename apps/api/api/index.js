@@ -1,4 +1,6 @@
-import { createApp } from "../dist/server.js";
+import serverBundle from "../dist/server.cjs";
+
+const { createApp } = serverBundle;
 
 let appPromise;
 
