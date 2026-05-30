@@ -1,0 +1,29 @@
+{
+  "name": "line-oa-ai-consulting-codex-kit",
+  "private": true,
+  "packageManager": "pnpm@9.0.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "pnpm -C apps/api dev",
+    "db:generate": "node scripts/with-default-env.mjs pnpm -C packages/db prisma generate",
+    "db:push": "node scripts/with-default-env.mjs pnpm -C packages/db prisma db push",
+    "lint": "pnpm -r --workspace-concurrency=1 lint",
+    "pretest": "pnpm db:push",
+    "test": "pnpm -r --workspace-concurrency=1 test"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "@types/node": "^22.0.0",
+    "eslint": "^9.0.0",
+    "globals": "^15.0.0",
+    "typescript": "^5.6.0",
+    "typescript-eslint": "^8.0.0",
+    "vitest": "^2.0.0"
+  }
+}

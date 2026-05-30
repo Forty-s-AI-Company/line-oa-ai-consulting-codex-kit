@@ -1,0 +1,29 @@
+[
+  {
+    "id": "mock-nutrition-001",
+    "title": "營養諮詢基本原則",
+    "domain": "nutrition",
+    "category": "daily-health",
+    "source_type": "mock",
+    "source_path": "examples/mock-kb.json",
+    "chunk_index": 0,
+    "content": "一般營養建議應先了解使用者的飲食型態、作息、目標與限制，避免做疾病診斷或療效保證。",
+    "keywords": ["營養", "飲食", "保健"],
+    "updated_at": "2026-05-30T00:00:00+08:00",
+    "compliance_level": "normal"
+  },
+  {
+    "id": "mock-business-001",
+    "title": "事業機會回覆原則",
+    "domain": "business",
+    "category": "opportunity",
+    "source_type": "mock",
+    "source_path": "examples/mock-kb.json",
+    "chunk_index": 0,
+    "content": "介紹事業機會時應避免保證收入，需說明成果會受時間投入、學習、客群與執行方式影響。",
+    "keywords": ["創業", "事業", "收入"],
+    "updated_at": "2026-05-30T00:00:00+08:00",
+    "compliance_level": "strict"
+  }
+]
+

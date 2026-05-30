@@ -1,0 +1,154 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String   @id @default(cuid())
+  lineUserId  String?  @unique
+  displayName String?
+  status      String   @default("active")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  conversations Conversation[]
+  tags          UserTag[]
+  escalationTasks EscalationTask[]
+}
+
+model Conversation {
+  id            String   @id @default(cuid())
+  userId        String
+  startedAt     DateTime @default(now())
+  lastMessageAt DateTime @default(now())
+  handoffFlag   Boolean  @default(false)
+  summary       String?
+
+  user     User      @relation(fields: [userId], references: [id])
+  messages Message[]
+  escalationTasks EscalationTask[]
+
+  @@index([userId])
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  conversationId String
+  role           String   // user | assistant | system
+  content        String
+  intent         String?
+  domain         String?
+  riskLevel      String?
+  replyType      String?
+  rawEventJson   String?
+  createdAt      DateTime @default(now())
+
+  conversation  Conversation   @relation(fields: [conversationId], references: [id])
+  retrievalLogs RetrievalLog[]
+  answerLogs    AnswerLog[]
+  escalationTasks EscalationTask[]
+
+  @@index([conversationId, createdAt])
+}
+
+model KnowledgeDocument {
+  id              String   @id
+  title           String
+  domain          String
+  category        String?
+  sourceType      String
+  sourcePath      String
+  updatedAt       DateTime?
+  complianceLevel String?
+
+  chunks KnowledgeChunk[]
+}
+
+model KnowledgeChunk {
+  id         String   @id @default(cuid())
+  documentId String
+  chunkIndex Int
+  content    String
+  keywords   String? // JSON string array for MVP
+
+  document KnowledgeDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId, chunkIndex])
+  @@unique([documentId, chunkIndex])
+}
+
+model RetrievalLog {
+  id          String   @id @default(cuid())
+  messageId   String
+  chunkId     String?
+  sourceId    String?
+  sourceTitle String?
+  chunkText   String
+  score       Float
+  metadata    String?
+  createdAt   DateTime @default(now())
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId, createdAt])
+}
+
+model AnswerLog {
+  id           String   @id @default(cuid())
+  messageId    String
+  draftText    String?
+  finalText    String
+  riskLevel    String
+  action       String
+  reasons      String? // JSON
+  citations    String? // JSON
+  latencyMs    Int?
+  createdAt    DateTime @default(now())
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId, createdAt])
+}
+
+model EscalationTask {
+  id             String   @id @default(cuid())
+  userId         String
+  conversationId String?
+  messageId      String?
+  reason         String
+  status         String   @default("open")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user         User          @relation(fields: [userId], references: [id])
+  conversation Conversation? @relation(fields: [conversationId], references: [id])
+  message      Message?      @relation(fields: [messageId], references: [id])
+
+  @@index([status, createdAt])
+}
+
+model UserTag {
+  id        String   @id @default(cuid())
+  userId    String
+  tag       String
+  score     Float    @default(0)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, tag])
+}
+
+model PromptVersion {
+  id        String   @id @default(cuid())
+  name      String
+  content   String
+  version   Int
+  createdAt DateTime @default(now())
+
+  @@unique([name, version])
+}

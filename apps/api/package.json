@@ -1,0 +1,30 @@
+{
+  "name": "@repo/api",
+  "private": true,
+  "type": "module",
+  "version": "0.0.0",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsup src/index.ts --format esm --dts false",
+    "start": "node dist/index.js",
+    "lint": "pnpm -w exec eslint .",
+    "test": "pnpm -w exec vitest run apps/api/test"
+  },
+  "dependencies": {
+    "@fastify/cors": "^10.0.0",
+    "@repo/ai": "workspace:*",
+    "@repo/core": "workspace:*",
+    "@repo/db": "workspace:*",
+    "@repo/shared": "workspace:*",
+    "dotenv": "^16.0.0",
+    "fastify": "^5.0.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.0.0"
+  }
+}
+

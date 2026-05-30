@@ -1,0 +1,5 @@
+Read PROJECT_BOOK.md, AGENTS.md, TASK.md, SKILLS.md, docs/, prompts/, schemas/ first.
+Then implement the project in high-autonomy mode.
+Do not stop unless blocked by secrets, destructive actions, or unrecoverable ambiguity.
+Prefer mock mode first, then keep real-provider interfaces ready.
+After each major phase, update docs/progress.md and docs/todo.md.

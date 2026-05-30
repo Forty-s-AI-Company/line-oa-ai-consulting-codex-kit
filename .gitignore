@@ -1,0 +1,29 @@
+node_modules/
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+
+# Build and test outputs
+dist/
+build/
+coverage/
+.turbo/
+.cache/
+
+# Local databases
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Logs and local tunnels
+*.log
+cloudflared.log
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

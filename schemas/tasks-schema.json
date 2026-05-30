@@ -1,0 +1,59 @@
+{
+  "project": "line-oa-ai-consulting",
+  "phases": [
+    {
+      "id": "scaffold",
+      "tasks": [
+        "initialize workspace",
+        "create api app",
+        "create admin app",
+        "create shared packages",
+        "add README and env example"
+      ]
+    },
+    {
+      "id": "core-domain",
+      "tasks": [
+        "create prisma schema",
+        "create repositories",
+        "create seed data"
+      ]
+    },
+    {
+      "id": "ai-pipeline",
+      "tasks": [
+        "intent router",
+        "retrieval provider interface",
+        "mock retrieval provider",
+        "safety guardrails",
+        "answer composer"
+      ]
+    },
+    {
+      "id": "line-integration",
+      "tasks": [
+        "webhook endpoint",
+        "signature verification",
+        "reply adapter",
+        "event replay script"
+      ]
+    },
+    {
+      "id": "admin",
+      "tasks": [
+        "conversation list",
+        "conversation detail",
+        "risk flags",
+        "escalation board"
+      ]
+    },
+    {
+      "id": "quality",
+      "tasks": [
+        "unit tests",
+        "integration tests",
+        "e2e smoke tests"
+      ]
+    }
+  ]
+}
