@@ -18,6 +18,5 @@ export type AnswerComposer = {
     intent: IntentResult;
     retrieved: RetrievalChunk[];
     safety: SafetyDecision;
-  }): ComposedAnswer;
+  }): ComposedAnswer | Promise<ComposedAnswer>;
 };
-

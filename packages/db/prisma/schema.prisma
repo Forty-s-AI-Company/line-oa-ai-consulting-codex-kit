@@ -9,15 +9,96 @@ datasource db {
 
 model User {
   id          String   @id @default(cuid())
-  lineUserId  String?  @unique
+  workspaceId String   @default("default")
+  lineUserId  String?
   displayName String?
   status      String   @default("active")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  workspace Workspace @relation(fields: [workspaceId], references: [id])
   conversations Conversation[]
   tags          UserTag[]
   escalationTasks EscalationTask[]
+
+  @@unique([workspaceId, lineUserId])
+  @@index([workspaceId])
+}
+
+model Workspace {
+  id          String   @id @default(cuid())
+  name        String
+  mode        String   @default("shared") // shared | dedicated
+  ownerLineUserId String?
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users       User[]
+  aiCredential AiProviderCredential?
+  botSettings BotSettings?
+  lineChannels LineChannelCredential[]
+}
+
+model AiProviderCredential {
+  id              String   @id @default(cuid())
+  workspaceId     String   @unique
+  provider        String   // gemini | openai | anthropic
+  model           String
+  encryptedApiKey String
+  enabled         Boolean  @default(true)
+  monthlyBudgetLimit Float?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+model BotSettings {
+  id          String   @id @default(cuid())
+  workspaceId String   @unique
+  tone        String   @default("professional")
+  systemPrompt String?
+  topK        Int      @default(5)
+  safetyLevel String   @default("standard")
+  autoReplyEnabled Boolean @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+model LineChannelCredential {
+  id                        String   @id @default(cuid())
+  workspaceId                String
+  channelId                  String?
+  destination                String?  @unique
+  basicId                    String?
+  encryptedChannelSecret     String
+  encryptedChannelAccessToken String
+  enabled                    Boolean  @default(true)
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([channelId])
+}
+
+model UsageLog {
+  id          String   @id @default(cuid())
+  workspaceId String
+  provider    String
+  model       String
+  inputTokens Int      @default(0)
+  outputTokens Int     @default(0)
+  estimatedCost Float  @default(0)
+  lineUserId  String?
+  conversationId String?
+  createdAt   DateTime @default(now())
+
+  @@index([workspaceId, createdAt])
 }
 
 model Conversation {

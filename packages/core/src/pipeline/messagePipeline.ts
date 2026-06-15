@@ -30,14 +30,15 @@ export class MessagePipeline {
     replyToken: string;
     text: string;
     rawEventJson: string;
+    workspaceId?: string;
   }): Promise<PipelineResult> {
     const prisma = this.deps.prisma;
     const now = new Date();
 
     const user = await prisma.user.upsert({
-      where: { lineUserId: input.lineUserId },
+      where: { workspaceId_lineUserId: { workspaceId: input.workspaceId ?? "default", lineUserId: input.lineUserId } },
       update: { updatedAt: now },
-      create: { lineUserId: input.lineUserId }
+      create: { workspaceId: input.workspaceId ?? "default", lineUserId: input.lineUserId }
     });
 
     // MVP: single active conversation per user (latest).
@@ -81,12 +82,14 @@ export class MessagePipeline {
       : [];
 
     // For MVP, "draft" is the composed answer pre-safety; the composer will add safety text.
-    const draftText = this.deps.composer.compose({
+    const draftText = (
+      await this.deps.composer.compose({
       userMessage: input.text,
       intent,
       retrieved,
       safety: { action: "allow", riskLevel: "low", reasons: [], hints: [] }
-    }).text;
+      })
+    ).text;
 
     const safetyDecision = this.deps.safety.inspect({
       userMessage: input.text,
@@ -94,7 +97,7 @@ export class MessagePipeline {
       draftAnswer: draftText
     });
 
-    const finalAnswer = this.deps.composer.compose({
+    const finalAnswer = await this.deps.composer.compose({
       userMessage: input.text,
       intent,
       retrieved,

@@ -5,3 +5,4 @@ export * from "./retrieval/amwayKnowledgeBaseRetrievalProvider.js";
 export * from "./retrieval/createRetrievalProviderFromEnv.js";
 export * from "./safety/safetyGuard.js";
 export * from "./answer/answerComposer.js";
+export * from "./answer/geminiAnswerComposer.js";

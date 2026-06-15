@@ -13,15 +13,84 @@ export function getPrisma(): PrismaClient {
 async function createSqliteSchema(prisma: PrismaClient): Promise<void> {
   const statements = [
     "PRAGMA foreign_keys = ON",
+    `CREATE TABLE IF NOT EXISTS "Workspace" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "name" TEXT NOT NULL,
+      "mode" TEXT NOT NULL DEFAULT 'shared',
+      "ownerLineUserId" TEXT,
+      "isDefault" BOOLEAN NOT NULL DEFAULT false,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" DATETIME NOT NULL
+    )`,
+    `INSERT OR IGNORE INTO "Workspace" ("id", "name", "mode", "isDefault", "updatedAt")
+      VALUES ('default', 'Default Shared LINE OA', 'shared', true, CURRENT_TIMESTAMP)`,
+    `CREATE TABLE IF NOT EXISTS "AiProviderCredential" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "workspaceId" TEXT NOT NULL,
+      "provider" TEXT NOT NULL,
+      "model" TEXT NOT NULL,
+      "encryptedApiKey" TEXT NOT NULL,
+      "enabled" BOOLEAN NOT NULL DEFAULT true,
+      "monthlyBudgetLimit" REAL,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" DATETIME NOT NULL,
+      CONSTRAINT "AiProviderCredential_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "Workspace" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    )`,
+    `CREATE UNIQUE INDEX IF NOT EXISTS "AiProviderCredential_workspaceId_key" ON "AiProviderCredential"("workspaceId")`,
+    `CREATE TABLE IF NOT EXISTS "BotSettings" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "workspaceId" TEXT NOT NULL,
+      "tone" TEXT NOT NULL DEFAULT 'professional',
+      "systemPrompt" TEXT,
+      "topK" INTEGER NOT NULL DEFAULT 5,
+      "safetyLevel" TEXT NOT NULL DEFAULT 'standard',
+      "autoReplyEnabled" BOOLEAN NOT NULL DEFAULT true,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" DATETIME NOT NULL,
+      CONSTRAINT "BotSettings_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "Workspace" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    )`,
+    `CREATE UNIQUE INDEX IF NOT EXISTS "BotSettings_workspaceId_key" ON "BotSettings"("workspaceId")`,
+    `CREATE TABLE IF NOT EXISTS "LineChannelCredential" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "workspaceId" TEXT NOT NULL,
+      "channelId" TEXT,
+      "destination" TEXT,
+      "basicId" TEXT,
+      "encryptedChannelSecret" TEXT NOT NULL,
+      "encryptedChannelAccessToken" TEXT NOT NULL,
+      "enabled" BOOLEAN NOT NULL DEFAULT true,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" DATETIME NOT NULL,
+      CONSTRAINT "LineChannelCredential_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "Workspace" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    )`,
+    `CREATE UNIQUE INDEX IF NOT EXISTS "LineChannelCredential_destination_key" ON "LineChannelCredential"("destination")`,
+    `CREATE INDEX IF NOT EXISTS "LineChannelCredential_workspaceId_idx" ON "LineChannelCredential"("workspaceId")`,
+    `CREATE INDEX IF NOT EXISTS "LineChannelCredential_channelId_idx" ON "LineChannelCredential"("channelId")`,
+    `CREATE TABLE IF NOT EXISTS "UsageLog" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "workspaceId" TEXT NOT NULL,
+      "provider" TEXT NOT NULL,
+      "model" TEXT NOT NULL,
+      "inputTokens" INTEGER NOT NULL DEFAULT 0,
+      "outputTokens" INTEGER NOT NULL DEFAULT 0,
+      "estimatedCost" REAL NOT NULL DEFAULT 0,
+      "lineUserId" TEXT,
+      "conversationId" TEXT,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`,
+    `CREATE INDEX IF NOT EXISTS "UsageLog_workspaceId_createdAt_idx" ON "UsageLog"("workspaceId", "createdAt")`,
     `CREATE TABLE IF NOT EXISTS "User" (
       "id" TEXT NOT NULL PRIMARY KEY,
+      "workspaceId" TEXT NOT NULL DEFAULT 'default',
       "lineUserId" TEXT,
       "displayName" TEXT,
       "status" TEXT NOT NULL DEFAULT 'active',
       "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      "updatedAt" DATETIME NOT NULL
+      "updatedAt" DATETIME NOT NULL,
+      CONSTRAINT "User_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "Workspace" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
     )`,
-    `CREATE UNIQUE INDEX IF NOT EXISTS "User_lineUserId_key" ON "User"("lineUserId")`,
+    `CREATE UNIQUE INDEX IF NOT EXISTS "User_workspaceId_lineUserId_key" ON "User"("workspaceId", "lineUserId")`,
+    `CREATE INDEX IF NOT EXISTS "User_workspaceId_idx" ON "User"("workspaceId")`,
     `CREATE TABLE IF NOT EXISTS "Conversation" (
       "id" TEXT NOT NULL PRIMARY KEY,
       "userId" TEXT NOT NULL,

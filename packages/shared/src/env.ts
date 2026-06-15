@@ -14,7 +14,10 @@ export const EnvSchema = z.object({
   MOCK_KB_PATH: z.string().optional(),
   AKB_BASE_URL: z.string().optional(),
   AKB_API_TOKEN: z.string().optional(),
-  AKB_TIMEOUT_MS: z.string().optional()
+  AKB_TIMEOUT_MS: z.string().optional(),
+  DEFAULT_WORKSPACE_ID: z.string().optional(),
+  ENCRYPTION_KEY: z.string().optional(),
+  AI_TIMEOUT_MS: z.string().optional()
 });
 
 export type Env = z.infer<typeof EnvSchema>;
