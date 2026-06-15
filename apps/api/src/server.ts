@@ -208,6 +208,11 @@ async function ensureDefaultWorkspace(config: ApiConfig, prisma: ReturnType<type
       isDefault: true
     }
   });
+  await prisma.botSettings.upsert({
+    where: { workspaceId: config.defaultWorkspaceId },
+    update: {},
+    create: { workspaceId: config.defaultWorkspaceId }
+  });
 }
 
 async function resolveWorkspaceForWebhook(input: {
