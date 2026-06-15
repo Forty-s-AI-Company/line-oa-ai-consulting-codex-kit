@@ -69,7 +69,14 @@ async function replyToLine(config: ApiConfig, input: { replyToken: string; text:
   }
 }
 
+function rawBodyToString(raw: unknown): string {
+  if (Buffer.isBuffer(raw)) return raw.toString("utf8");
+  if (typeof raw === "string") return raw;
+  return JSON.stringify(raw ?? {});
+}
+
 function parseJsonBody(raw: unknown): unknown {
+  if (Buffer.isBuffer(raw)) return JSON.parse(raw.toString("utf8")) as unknown;
   if (typeof raw !== "string") return raw;
   return JSON.parse(raw) as unknown;
 }
@@ -83,8 +90,8 @@ export async function createApp() {
     allowedHeaders: ["content-type", "x-line-signature", "x-admin-key"],
   });
 
-  // Keep raw JSON text so LINE signature verification uses the exact body.
-  fastify.addContentTypeParser("application/json", { parseAs: "string" }, (_req, body, done) => {
+  // Keep raw bytes so LINE signature verification and UTF-8 JSON parsing stay consistent on serverless runtimes.
+  fastify.addContentTypeParser("application/json", { parseAs: "buffer" }, (_req, body, done) => {
     done(null, body);
   });
 
@@ -106,7 +113,7 @@ export async function createApp() {
   }));
 
   fastify.post("/webhooks/line", async (request, reply) => {
-    const rawBody = typeof request.body === "string" ? request.body : JSON.stringify(request.body ?? {});
+    const rawBody = rawBodyToString(request.body);
 
     if (!config.enableMockMode) {
       if (!config.lineChannelSecret) {
