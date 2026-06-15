@@ -1,0 +1,17 @@
+.env
+.env.*
+!.env.example
+
+node_modules/
+dist/
+coverage/
+.turbo/
+.cache/
+
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+*.log
+cloudflared.log
