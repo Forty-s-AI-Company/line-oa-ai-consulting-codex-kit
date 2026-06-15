@@ -53,6 +53,15 @@ function coerceDomain(raw: string): Domain {
   }
 }
 
+function normalizeAkbSnippet(text: string): string {
+  return text
+    .replace(/\[[^\]\s]{1,12}\]/g, (m) => m.slice(1, -1))
+    .replace(/\s+/g, " ")
+    .replace(/([\u4e00-\u9fff])\s+(?=[\u4e00-\u9fff])/g, "$1")
+    .replace(/\\n/g, " ")
+    .trim();
+}
+
 export class AmwayKnowledgeBaseRetrievalProvider implements RetrievalProvider {
   constructor(
     private opts: {
@@ -113,7 +122,7 @@ export class AmwayKnowledgeBaseRetrievalProvider implements RetrievalProvider {
         const sourceRelPath = asString(r.source_rel_path) ?? "";
         const chunkIdStr = asString(r.chunk_id) ?? "0";
         const title = (asString(r.title) ?? "").trim() || sourceRelPath || "(unknown)";
-        const snippet = asString(r.snippet) ?? "";
+        const snippet = normalizeAkbSnippet(asString(r.snippet) ?? "");
         const score = asNumber(r.score) ?? 0;
         const sourceKind = asString(r.source_kind) ?? "unknown";
 

@@ -6,28 +6,70 @@ function pickTopChunks(chunks: RetrievalChunk[], limit: number): RetrievalChunk[
   return [...chunks].sort((a, b) => b.score - a.score).slice(0, limit);
 }
 
-function joinBullets(lines: string[]): string {
-  return lines.map((l) => `- ${l}`).join("\n");
+function normalizeSnippet(text: string): string {
+  return text
+    .replace(/\[[^\]\s]{1,12}\]/g, (m) => m.slice(1, -1))
+    .replace(/\s+/g, " ")
+    .replace(/([\u4e00-\u9fff])\s+(?=[\u4e00-\u9fff])/g, "$1")
+    .replace(/\\n/g, " ")
+    .replace(/…{2,}/g, "…")
+    .trim();
 }
 
-function safeFallback(domain: string): string {
-  if (domain === "business") {
+function isLowValueSnippet(text: string): boolean {
+  const normalized = normalizeSnippet(text);
+  if (normalized.length < 12) return true;
+  const badPatterns = ["孕期", "皮膚癌", "腎結石", "男人的尊嚴"];
+  return badPatterns.some((p) => normalized.includes(p));
+}
+
+function fallbackByDomain(domain: IntentResult["domain"]): string {
+  if (domain === "nutrition") {
     return [
-      "我可以先幫你釐清你想了解的是「怎麼開始」還是「怎麼評估適不適合」。",
-      joinBullets([
-        "你目前最在意的是時間投入、成本、或收益期待？",
-        "你希望一週能投入大概多少時間？",
-        "如果你願意，我也可以整理一份一般性的評估清單給你"
-      ])
+      "外食族補充營養，可以先抓三個方向：",
+      "1. 每餐先補足蛋白質，例如豆魚蛋肉、豆腐、無糖豆漿。",
+      "2. 蔬菜量常常不足，可以優先選燙青菜、沙拉、菇類、海帶芽。",
+      "3. 如果作息忙、餐餐外食，再考慮用綜合營養補充品當輔助，不要取代正餐。",
+      "",
+      "如果你願意，我可以依照你的外食型態，例如便當、超商、麵食或早餐店，幫你整理一版更精準的吃法。"
     ].join("\n");
   }
+
   return [
-    "我先用比較保守的方式回答，避免講得太滿。",
-    joinBullets([
-      "你方便說一下目前的狀況或目標嗎？（例如想改善什麼）",
-      "如果你有特定產品/成分/情境，也可以丟關鍵字我再幫你找",
-      "我會用一般性資訊回覆，必要時也會提醒你找專業人士確認"
-    ])
+    "我先給你一個簡單方向：",
+    "1. 先確認目前最困擾你的狀況。",
+    "2. 再從飲食、作息、產品補充三個面向做調整。",
+    "3. 如果有特殊疾病、用藥或懷孕狀況，建議先問專業醫師或營養師。",
+    "",
+    "你可以多告訴我一點目前情況，我再幫你收斂成比較適合的建議。"
+  ].join("\n");
+}
+
+function buildKnowledgeBasedAnswer(input: {
+  userMessage: string;
+  intent: IntentResult;
+  chunks: RetrievalChunk[];
+}): string {
+  const useful = input.chunks.filter((c) => !isLowValueSnippet(c.content));
+  if (useful.length === 0) return fallbackByDomain(input.intent.domain);
+
+  const lines = useful.slice(0, 2).map((chunk) => {
+    const snippet = normalizeSnippet(chunk.content);
+    return `- ${snippet.length > 90 ? `${snippet.slice(0, 90)}…` : snippet}`;
+  });
+
+  return [
+    "我先用知識庫裡比較相關的資料，整理成好執行的版本：",
+    "",
+    "外食族可以先這樣補：",
+    "1. 每餐先顧蛋白質，避免只吃澱粉類主食。",
+    "2. 補蔬菜與膳食纖維，外食時可以多加一份青菜、菇類或海帶類。",
+    "3. 如果三餐很不穩，綜合營養補充品可以當輔助，但不要取代正常飲食。",
+    "",
+    "知識庫參考重點：",
+    ...lines,
+    "",
+    "如果你告訴我你平常最常吃哪一類外食，我可以直接幫你排一版更實用的選餐方式。"
   ].join("\n");
 }
 
@@ -39,19 +81,18 @@ function applySafety(text: string, safety: SafetyDecision): string {
       return [
         text,
         "",
-        "補充一下：每個人狀況不同，我會先用一般性資訊提供方向，不會做保證或取代專業診斷。"
+        "提醒：以上是一般健康資訊，不能取代醫師、藥師或營養師的個別建議。"
       ].join("\n");
     case "escalate":
       return [
         text,
         "",
-        "這題牽涉到比較高風險的判斷，我建議安排專業人士或顧問跟你確認細節，我也可以幫你整理要問的重點。"
+        "如果你有明確症狀、正在用藥、懷孕或有慢性病，建議先讓專業人員協助評估，會比較安全。"
       ].join("\n");
     case "block":
       return [
-        "這個問題我不方便直接給出具體診斷/停藥/療效保證的建議。",
-        "如果你願意，我可以：",
-        joinBullets(["幫你整理要問醫師/藥師的問題清單", "提供一般性保養/生活建議（不取代醫療）"])
+        "這個問題可能涉及高風險健康判斷，我不能直接給診斷或療程建議。",
+        "如果你有不舒服或正在治療中，建議先詢問醫師或營養師。"
       ].join("\n");
     default:
       assertUnreachable(safety);
@@ -65,29 +106,18 @@ export class SimpleAnswerComposer implements AnswerComposer {
     retrieved: RetrievalChunk[];
     safety: SafetyDecision;
   }): ComposedAnswer {
-    const top = pickTopChunks(input.retrieved, 2);
+    const top = pickTopChunks(input.retrieved, 3);
+    const base =
+      top.length > 0
+        ? buildKnowledgeBasedAnswer({ userMessage: input.userMessage, intent: input.intent, chunks: top })
+        : fallbackByDomain(input.intent.domain);
 
-    let base: string;
-    if (top.length === 0) {
-      base = safeFallback(input.intent.domain ?? "unknown");
-    } else {
-      const first = top[0]!;
-      base = [
-        `先回答你：我找到一段相關資料可以參考。`,
-        joinBullets([
-          `重點：${first.content.slice(0, 80)}${first.content.length > 80 ? "..." : ""}`,
-          "如果你願意，告訴我你目前的狀況或想達到的目標，我可以再把建議收斂得更精準"
-        ])
-      ].join("\n");
-    }
-
-    const finalText = applySafety(base, input.safety);
     const citations = top.map((c) => ({
       chunkId: c.id,
       title: c.title,
       sourcePath: c.source.sourcePath
     }));
 
-    return { text: finalText, citations };
+    return { text: applySafety(base, input.safety), citations };
   }
 }
