@@ -110,6 +110,7 @@ export async function createApp() {
   fastify.get("/healthz", async () => ({
     ok: true,
     retrieval: process.env.AKB_BASE_URL ? "amway-knowledge-base" : "mock",
+    build: "answer-format-v2",
   }));
 
   fastify.post("/webhooks/line", async (request, reply) => {
@@ -191,6 +192,7 @@ export async function createApp() {
 
     return reply.send({
       ok: true,
+      inputMessage: parsed.data.message,
       replyText: result.replyText,
       intent: result.intent,
       retrieved: result.retrieved,
