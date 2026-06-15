@@ -9,7 +9,7 @@ import {
   createRetrievalProviderFromEnv,
 } from "@repo/ai";
 import { MessagePipeline, verifyLineSignature } from "@repo/core";
-import { getPrisma } from "@repo/db";
+import { ensurePrismaSqliteSchema, getPrisma } from "@repo/db";
 import { envBool, readEnv, LineTextMessageEventSchema, LineWebhookBodySchema } from "@repo/shared";
 
 const ConfigSchema = z.object({
@@ -25,7 +25,9 @@ const ConfigSchema = z.object({
 type ApiConfig = z.infer<typeof ConfigSchema>;
 
 function loadConfig(): ApiConfig {
-  process.env.DATABASE_URL ??= "file:../../dev.db";
+  // Vercel Serverless can only write safely under /tmp. Use it as a short-term
+  // fallback until a persistent production database is attached.
+  process.env.DATABASE_URL ??= process.env.VERCEL ? "file:/tmp/line-oa-ai-consulting.db" : "file:../../dev.db";
 
   const env = readEnv(process.env);
   return ConfigSchema.parse({
@@ -86,8 +88,11 @@ export async function createApp() {
     done(null, body);
   });
 
+  const prisma = getPrisma();
+  await ensurePrismaSqliteSchema(prisma);
+
   const pipeline = new MessagePipeline({
-    prisma: getPrisma(),
+    prisma,
     intentRouter: new RuleBasedIntentRouter(),
     retrieval: createRetrievalProviderFromEnv({ mockKbPath: config.mockKbPath }),
     safety: new RuleBasedSafetyGuard(),
