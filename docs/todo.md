@@ -4,13 +4,13 @@
 
 - Replace the temporary Vercel SQLite runtime database with a persistent database, such as Neon Postgres or Supabase Postgres.
 - Set a strong production `ADMIN_API_KEY`; do not keep `dev-admin-key`.
-- Add LIFF identity verification so users can log in with LINE and only manage their own workspace.
+- Set production `LIFF_ID` and `LIFF_CHANNEL_ID` environment variables.
 - Add per-workspace usage logging and quota checks before calling external AI providers.
-- Add owner invite / workspace claim flow for users who want Mode A.
+- Add owner invite / transfer flow for workspaces that need multiple admins.
 
 ## Product Improvements
 
-- Make the LIFF admin UI mobile-first and friendlier for non-technical users.
+- Continue polishing the LIFF admin UI after real-user testing.
 - Add a guided setup wizard:
   - Choose Mode B or Mode A.
   - Paste Gemini API key.

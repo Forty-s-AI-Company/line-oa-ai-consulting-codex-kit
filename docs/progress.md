@@ -21,6 +21,11 @@
   - `pnpm db:seed`
   - `pnpm db:studio`
 - Updated DB seed to create the default workspace and bot settings.
+- Added LIFF user login flow for the admin page.
+- Added LIFF workspace claim flow so a LINE user can create a dedicated Mode A workspace.
+- Added owner-only LIFF APIs for updating AI credentials and bot settings.
+- Added LINE webhook routing so a user with a claimed Mode A workspace uses their own workspace even when messaging the shared official account.
+- Added tests for LIFF authentication, workspace ownership isolation, and webhook workspace routing.
 
 ## Verification
 
@@ -29,3 +34,4 @@
 - Production health endpoint returned `build: "multi-tenant-byok-v1"` after deployment.
 - Production playground returned RAG-backed Traditional Chinese nutrition answers.
 - Local DB can be initialized with SQLite before moving to a production database.
+- LIFF owner binding is implemented with local SQLite and can be migrated to production Postgres later.

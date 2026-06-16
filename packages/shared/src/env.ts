@@ -17,7 +17,9 @@ export const EnvSchema = z.object({
   AKB_TIMEOUT_MS: z.string().optional(),
   DEFAULT_WORKSPACE_ID: z.string().optional(),
   ENCRYPTION_KEY: z.string().optional(),
-  AI_TIMEOUT_MS: z.string().optional()
+  AI_TIMEOUT_MS: z.string().optional(),
+  LIFF_ID: z.string().optional(),
+  LIFF_CHANNEL_ID: z.string().optional()
 });
 
 export type Env = z.infer<typeof EnvSchema>;
