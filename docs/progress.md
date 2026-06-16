@@ -32,7 +32,10 @@
 - Added Postgres DB preparation scripts:
   - `pnpm db:postgres:generate`
   - `pnpm db:postgres:push`
+  - `pnpm db:postgres:seed`
 - Added production DB migration documentation.
+- Selected Supabase as the production DB target.
+- Added dynamic Prisma generation so API builds use the Postgres schema when `DATABASE_URL` starts with `postgres`.
 
 ## Verification
 
@@ -44,3 +47,4 @@
 - LIFF owner binding is implemented with local SQLite and can be migrated to production Postgres later.
 - LIFF/Admin page smoke test covers LIFF SDK loading and HTML escaping helper presence.
 - Production DB migration is prepared but not yet cut over because no real Postgres connection string is configured.
+- Supabase cutover still needs real `DATABASE_URL` and `DIRECT_URL`.

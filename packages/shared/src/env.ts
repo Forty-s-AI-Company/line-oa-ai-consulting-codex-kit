@@ -8,6 +8,7 @@ export const EnvSchema = z.object({
   LINE_CHANNEL_SECRET: z.string().optional(),
   LINE_CHANNEL_ACCESS_TOKEN: z.string().optional(),
   DATABASE_URL: z.string().optional(),
+  DIRECT_URL: z.string().optional(),
   ENABLE_MOCK_MODE: z.string().optional(),
   ENABLE_HUMAN_HANDOFF: z.string().optional(),
   LOG_LEVEL: z.string().optional(),
