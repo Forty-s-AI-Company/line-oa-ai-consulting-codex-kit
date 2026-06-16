@@ -12,6 +12,7 @@ import {
 import { MessagePipeline, verifyLineSignature } from "@repo/core";
 import { ensurePrismaSqliteSchema, getPrisma } from "@repo/db";
 import { envBool, readEnv, LineTextMessageEventSchema, LineWebhookBodySchema } from "@repo/shared";
+import { renderAdminHtmlPage } from "./adminHtml.js";
 import { decryptSecret, encryptSecret } from "./crypto.js";
 
 const ConfigSchema = z.object({
@@ -133,7 +134,7 @@ async function requireLiffUser(config: ApiConfig, request: FastifyRequest, reply
   return user;
 }
 
-function renderAdminHtml(): string {
+export function renderLegacyAdminHtml(): string {
   return `<!doctype html>
 <html lang="zh-Hant">
 <head>
@@ -623,11 +624,11 @@ export async function createApp() {
   }));
 
   fastify.get("/admin", async (_request, reply) => {
-    return reply.type("text/html; charset=utf-8").send(renderAdminHtml());
+    return reply.type("text/html; charset=utf-8").send(renderAdminHtmlPage());
   });
 
   fastify.get("/liff/admin", async (_request, reply) => {
-    return reply.type("text/html; charset=utf-8").send(renderAdminHtml());
+    return reply.type("text/html; charset=utf-8").send(renderAdminHtmlPage());
   });
 
   fastify.get("/liff/config", async () => ({

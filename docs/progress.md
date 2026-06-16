@@ -26,6 +26,8 @@
 - Added owner-only LIFF APIs for updating AI credentials and bot settings.
 - Added LINE webhook routing so a user with a claimed Mode A workspace uses their own workspace even when messaging the shared official account.
 - Added tests for LIFF authentication, workspace ownership isolation, and webhook workspace routing.
+- Split the LIFF/Admin HTML page into `apps/api/src/adminHtml.ts`.
+- Added frontend HTML escaping for workspace names rendered into the LIFF page.
 
 ## Verification
 
@@ -35,3 +37,4 @@
 - Production playground returned RAG-backed Traditional Chinese nutrition answers.
 - Local DB can be initialized with SQLite before moving to a production database.
 - LIFF owner binding is implemented with local SQLite and can be migrated to production Postgres later.
+- LIFF/Admin page smoke test covers LIFF SDK loading and HTML escaping helper presence.

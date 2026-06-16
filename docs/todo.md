@@ -11,6 +11,7 @@
 ## Product Improvements
 
 - Continue polishing the LIFF admin UI after real-user testing.
+- Fully remove the legacy unreachable inline HTML from `apps/api/src/server.ts` after a safe cleanup pass.
 - Add a guided setup wizard:
   - Choose Mode B or Mode A.
   - Paste Gemini API key.
