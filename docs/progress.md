@@ -16,6 +16,11 @@
 - Created LINE Login channel `PureFit AI Admin`.
 - Created LIFF app `PureFit AI Admin` with LIFF ID `2010405627-YY9AFIAV`.
 - Added default bot settings initialization for the default workspace.
+- Added local DB workflow scripts for SQLite development:
+  - `pnpm db:local:init`
+  - `pnpm db:seed`
+  - `pnpm db:studio`
+- Updated DB seed to create the default workspace and bot settings.
 
 ## Verification
 
@@ -23,3 +28,4 @@
 - `pnpm test` passed before the LIFF setup phase.
 - Production health endpoint returned `build: "multi-tenant-byok-v1"` after deployment.
 - Production playground returned RAG-backed Traditional Chinese nutrition answers.
+- Local DB can be initialized with SQLite before moving to a production database.

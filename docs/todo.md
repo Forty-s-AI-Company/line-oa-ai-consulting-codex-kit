@@ -22,5 +22,6 @@
 ## Operations
 
 - Add production database migration workflow.
+- Add a Postgres migration branch after the local SQLite workflow is stable.
 - Add webhook diagnostics page for recent LINE events.
 - Add alerting for failed LINE replies and AI provider errors.

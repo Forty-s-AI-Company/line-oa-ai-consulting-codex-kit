@@ -13,6 +13,9 @@
     "dev": "pnpm -C apps/api dev",
     "db:generate": "node scripts/with-default-env.mjs pnpm -C packages/db prisma generate",
     "db:push": "node scripts/with-default-env.mjs pnpm -C packages/db prisma db push",
+    "db:seed": "node scripts/with-default-env.mjs pnpm -C packages/db prisma db seed",
+    "db:studio": "node scripts/with-default-env.mjs pnpm -C packages/db prisma studio",
+    "db:local:init": "pnpm db:push && pnpm db:seed",
     "lint": "pnpm -r --workspace-concurrency=1 lint",
     "pretest": "pnpm db:push",
     "test": "pnpm -r --workspace-concurrency=1 test"

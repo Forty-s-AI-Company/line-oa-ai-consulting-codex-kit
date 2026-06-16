@@ -25,6 +25,33 @@ async function main() {
   const repoRoot = path.resolve(__dirname, "../../..");
   const mockKbPath = path.resolve(repoRoot, "examples/mock-kb.json");
 
+  await prisma.workspace.upsert({
+    where: { id: "default" },
+    update: {
+      name: "Default Shared LINE OA",
+      mode: "shared",
+      isDefault: true
+    },
+    create: {
+      id: "default",
+      name: "Default Shared LINE OA",
+      mode: "shared",
+      isDefault: true
+    }
+  });
+
+  await prisma.botSettings.upsert({
+    where: { workspaceId: "default" },
+    update: {},
+    create: {
+      workspaceId: "default",
+      tone: "professional",
+      topK: 5,
+      safetyLevel: "standard",
+      autoReplyEnabled: true
+    }
+  });
+
   const raw = await fs.readFile(mockKbPath, "utf8");
   const items = JSON.parse(raw) as MockKbItem[];
 
