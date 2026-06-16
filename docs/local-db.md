@@ -51,3 +51,5 @@ The backend verifies the ID token with LINE using `LIFF_CHANNEL_ID`.
 ## Production Note
 
 SQLite is fine for local development, but it is not the right persistence layer for Vercel production. Before real multi-user launch, move the production database to Postgres, such as Neon or Supabase.
+
+See `docs/production-db.md` for the Postgres migration plan.

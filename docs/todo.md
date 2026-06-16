@@ -3,6 +3,7 @@
 ## Required Before Real Multi-User Launch
 
 - Replace the temporary Vercel SQLite runtime database with a persistent database, such as Neon Postgres or Supabase Postgres.
+- After a real Postgres `DATABASE_URL` is available, switch Vercel build generation to `schema.postgres.prisma`.
 - Set a strong production `ADMIN_API_KEY`; do not keep `dev-admin-key`.
 - Set production `LIFF_ID` and `LIFF_CHANNEL_ID` environment variables.
 - Add per-workspace usage logging and quota checks before calling external AI providers.

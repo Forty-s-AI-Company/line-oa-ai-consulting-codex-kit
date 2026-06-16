@@ -28,6 +28,11 @@
 - Added tests for LIFF authentication, workspace ownership isolation, and webhook workspace routing.
 - Split the LIFF/Admin HTML page into `apps/api/src/adminHtml.ts`.
 - Added frontend HTML escaping for workspace names rendered into the LIFF page.
+- Added a Postgres Prisma schema for future production DB migration.
+- Added Postgres DB preparation scripts:
+  - `pnpm db:postgres:generate`
+  - `pnpm db:postgres:push`
+- Added production DB migration documentation.
 
 ## Verification
 
@@ -38,3 +43,4 @@
 - Local DB can be initialized with SQLite before moving to a production database.
 - LIFF owner binding is implemented with local SQLite and can be migrated to production Postgres later.
 - LIFF/Admin page smoke test covers LIFF SDK loading and HTML escaping helper presence.
+- Production DB migration is prepared but not yet cut over because no real Postgres connection string is configured.
