@@ -112,12 +112,10 @@ export function renderAdminHtmlPage(): string {
     let liffReady = false;
     let myWorkspaces = [];
     let modelCatalog = [];
-    let apiBaseUrl = location.hostname === 'liff.line.me' ? 'https://line-oa.carry-digital-nomad.in.net' : location.origin;
 
     const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
     const show = (el, visible) => el.classList.toggle('hidden', !visible);
     const selectedProvider = () => modelCatalog.find((item) => item.provider === myProvider.value) || modelCatalog[0];
-    const apiUrl = (path) => new URL(path, apiBaseUrl).toString();
 
     function setFeedback(target, type, message) {
       target.className = 'feedback show ' + type;
@@ -165,33 +163,41 @@ export function renderAdminHtmlPage(): string {
         : '<p class="muted">還沒有自己的 AI 工作區。請先建立工作區。</p>';
     }
 
-    async function readJsonResponse(res) {
+    async function readJsonResponse(res, label) {
       const text = await res.text();
-      const data = text ? JSON.parse(text) : {};
-      if (!res.ok) throw new Error(JSON.stringify(data));
+      let data = {};
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        data = { error: text || res.statusText };
+      }
+      if (!res.ok) {
+        const detail = data.error || data.message || res.statusText || 'HTTP ' + res.status;
+        throw new Error(label + '失敗：' + detail);
+      }
       return data;
     }
 
-    async function liffApi(path, body, method='POST') {
-      const res = await fetch(apiUrl(path), {
+    async function liffApi(path, body, method='POST', label='API 呼叫') {
+      const res = await fetch(path, {
         method,
         headers: {'content-type':'application/json','authorization':'Bearer '+liffToken},
         body: body ? JSON.stringify(body) : undefined
       });
-      return readJsonResponse(res);
+      return readJsonResponse(res, label);
     }
 
     async function adminApi(path, body, method='POST') {
-      const res = await fetch(apiUrl(path), {
+      const res = await fetch(path, {
         method,
         headers: {'content-type':'application/json','x-admin-key':adminKey.value},
         body: body ? JSON.stringify(body) : undefined
       });
-      return readJsonResponse(res);
+      return readJsonResponse(res, '管理員 API');
     }
 
     async function refreshMe(){
-      const me = await liffApi('/liff/me', null, 'GET');
+      const me = await liffApi('/liff/me', null, 'GET', '讀取登入狀態');
       myWorkspaces = me.workspaces || [];
       loginStatus.textContent = '已登入：' + (me.user.displayName || me.user.lineUserId);
       show(logoutButton, true);
@@ -200,10 +206,9 @@ export function renderAdminHtmlPage(): string {
 
     async function initLiff(){
       const [cfg, catalog] = await Promise.all([
-        fetch(apiUrl('/liff/config')).then((res) => res.json()),
-        fetch(apiUrl('/liff/model-catalog')).then((res) => res.json())
+        fetch('/liff/config').then((res) => res.json()),
+        fetch('/liff/model-catalog').then((res) => res.json())
       ]);
-      if (cfg.apiBaseUrl) apiBaseUrl = cfg.apiBaseUrl;
       modelCatalog = catalog.providers || [];
       renderProviderOptions();
 
@@ -235,7 +240,7 @@ export function renderAdminHtmlPage(): string {
     function logoutLine(){ if (liffReady) { liff.logout(); location.reload(); } }
 
     async function claimWorkspace(){
-      result.textContent = JSON.stringify(await liffApi('/liff/workspaces/claim', { name: claimName.value || '我的 PureFit AI 健康顧問' }), null, 2);
+      result.textContent = JSON.stringify(await liffApi('/liff/workspaces/claim', { name: claimName.value || '我的 PureFit AI 健康顧問' }, 'POST', '建立工作區'), null, 2);
       await refreshMe();
     }
 
@@ -252,25 +257,17 @@ export function renderAdminHtmlPage(): string {
       setFeedback(saveAiFeedback, 'loading', '正在儲存 AI 設定，請稍候...');
 
       try {
-        try {
-          await liffApi('/liff/workspaces/'+encodeURIComponent(myWorkspace.value)+'/ai', {
-            provider: myProvider.value,
-            model: myModel.value,
-            apiKey: myApiKey.value || undefined,
-            enabled: true
-          });
-        } catch (error) {
-          throw new Error('儲存 AI Key / 模型失敗：' + getErrorMessage(error));
-        }
-        try {
-          await liffApi('/liff/workspaces/'+encodeURIComponent(myWorkspace.value)+'/settings', {
-            tone: myTone.value,
-            systemPrompt: mySystemPrompt.value,
-            autoReplyEnabled: true
-          });
-        } catch (error) {
-          throw new Error('儲存回答設定失敗：' + getErrorMessage(error));
-        }
+        await liffApi('/liff/workspaces/'+encodeURIComponent(myWorkspace.value)+'/ai', {
+          provider: myProvider.value,
+          model: myModel.value,
+          apiKey: myApiKey.value || undefined,
+          enabled: true
+        }, 'PUT', '儲存 AI Key / 模型');
+        await liffApi('/liff/workspaces/'+encodeURIComponent(myWorkspace.value)+'/settings', {
+          tone: myTone.value,
+          systemPrompt: mySystemPrompt.value,
+          autoReplyEnabled: true
+        }, 'PUT', '儲存回答設定');
         myApiKey.value = '';
         await refreshMe();
         setFeedback(saveAiFeedback, 'success', 'AI 設定已儲存成功。你現在可以回到 LINE 提問。');
@@ -285,7 +282,7 @@ export function renderAdminHtmlPage(): string {
 
     async function playground(){
       if (!playWorkspace.value) throw new Error('請先建立一個自己的 AI 工作區。');
-      result.textContent = JSON.stringify(await liffApi('/liff/playground', { workspaceId: playWorkspace.value, message: message.value }), null, 2);
+      result.textContent = JSON.stringify(await liffApi('/liff/playground', { workspaceId: playWorkspace.value, message: message.value }, 'POST', '測試顧問'), null, 2);
     }
 
     async function loadWorkspaces(){

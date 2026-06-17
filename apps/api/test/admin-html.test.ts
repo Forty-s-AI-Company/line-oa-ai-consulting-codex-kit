@@ -24,13 +24,12 @@ describe("admin html", () => {
     expect(res.body).toContain("escapeHtml");
     expect(res.body).toContain('id="saveAiButton"');
     expect(res.body).toContain('id="saveAiFeedback"');
-    expect(res.body).toContain("apiBaseUrl");
-    expect(res.body).toContain("https://line-oa.carry-digital-nomad.in.net");
+    expect(res.body).not.toContain("apiBaseUrl");
     expect(res.body).toContain("儲存中...");
     expect(res.body).toContain("AI 設定已儲存成功");
     expect(res.body).toContain("儲存失敗：");
-    expect(res.body).toContain("儲存 AI Key / 模型失敗");
-    expect(res.body).toContain("儲存回答設定失敗");
+    expect(res.body).toContain("儲存 AI Key / 模型");
+    expect(res.body).toContain("儲存回答設定");
 
     await app.fastify.close();
   });

@@ -11,7 +11,7 @@ describe("LIFF model catalog", () => {
     process.env.LIFF_CHANNEL_ID = "test-channel-id";
   });
 
-  test("returns current provider models and keeps legacy models marked", async () => {
+  test("returns current provider models and exposes only stable DeepSeek models", async () => {
     const app = await createApp();
     const res = await app.fastify.inject({ method: "GET", url: "/liff/model-catalog" });
 
@@ -27,21 +27,9 @@ describe("LIFF model catalog", () => {
     expect(openai.models).toContain("gpt-5.4-mini");
     expect(openai.modelOptions.some((model: { id: string }) => model.id === "gpt-4.1")).toBe(true);
     expect(deepseek.recommendedModel).toBe("deepseek-v4-flash");
-    expect(deepseek.models.slice(0, 2)).toEqual(["deepseek-v4-flash", "deepseek-v4-pro"]);
-    expect(deepseek.modelOptions.find((model: { id: string }) => model.id === "deepseek-chat")?.status).toBe("legacy");
+    expect(deepseek.models).toEqual(["deepseek-v4-flash", "deepseek-v4-pro"]);
+    expect(deepseek.modelOptions.map((model: { id: string }) => model.id)).toEqual(["deepseek-v4-flash", "deepseek-v4-pro"]);
 
     await app.fastify.close();
-  });
-
-  test("returns API base URL for LIFF webview API calls", async () => {
-    process.env.API_BASE_URL = "https://example.test";
-    const app = await createApp();
-    const res = await app.fastify.inject({ method: "GET", url: "/liff/config" });
-
-    expect(res.statusCode).toBe(200);
-    expect(res.json().apiBaseUrl).toBe("https://example.test");
-
-    await app.fastify.close();
-    delete process.env.API_BASE_URL;
   });
 });

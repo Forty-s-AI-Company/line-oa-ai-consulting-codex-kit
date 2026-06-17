@@ -52,13 +52,13 @@
 - Updated the LIFF model catalog from current provider docs:
   - Gemini now prioritizes `gemini-3.5-flash`.
   - OpenAI now exposes GPT-5.x era models and uses the Responses API for OpenAI calls.
-  - DeepSeek now prioritizes `deepseek-v4-flash` / `deepseek-v4-pro` and marks old names as legacy.
+  - DeepSeek now exposes only `deepseek-v4-flash` / `deepseek-v4-pro` in LIFF to avoid user-facing legacy model errors.
 - Rebuilt the OpenAI-compatible answer composer with clean Traditional Chinese RAG prompts.
 - Rebuilt the LIFF admin page copy into clean Traditional Chinese and added visible save feedback:
   - loading state while saving AI settings
   - success message after settings are saved
   - readable error message when save fails
-- Added `apiBaseUrl` to LIFF config and made LIFF admin API calls use an explicit API origin to avoid LINE LIFF webview relative-path 404s.
+- Removed the LIFF `apiBaseUrl` override and kept LIFF API calls on same-origin relative paths to avoid wrong-origin `Not Found` errors.
 - Improved AI settings save errors so users can tell whether the AI key/model step or bot settings step failed.
 
 ## Verification
@@ -76,4 +76,4 @@
 - B2C rich menu has been created in LINE and linked to the LIFF setup page.
 - Model catalog and OpenAI/DeepSeek composer tests cover the updated provider model behavior.
 - LIFF admin page test now covers AI settings save feedback elements and messages.
-- LIFF config tests now cover `apiBaseUrl` for webview API calls.
+- LIFF model catalog tests now verify DeepSeek only exposes stable V4 models.

@@ -2,7 +2,6 @@ import { z } from "zod";
 
 export const EnvSchema = z.object({
   NODE_ENV: z.string().optional(),
-  API_BASE_URL: z.string().optional(),
   ADMIN_BASE_URL: z.string().optional(),
   ADMIN_API_KEY: z.string().optional(),
   LINE_CHANNEL_SECRET: z.string().optional(),

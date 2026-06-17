@@ -27,7 +27,7 @@
 
 - Add repeatable production database migration workflow instead of manual SQL Editor bootstrap.
 - Replace static model catalog with real provider model API refresh and persist the latest catalog in DB.
-- Add a compatibility migration notice for users still using DeepSeek legacy `deepseek-chat` / `deepseek-reasoner` before 2026-07-24.
+- Add an admin-only compatibility migration notice for existing users still using DeepSeek legacy `deepseek-chat` / `deepseek-reasoner` before 2026-07-24.
 - Add webhook diagnostics page for recent LINE events.
 - Add alerting for failed LINE replies and AI provider errors.
 - Add a safe rich menu rotation script so old test rich menus can be cleaned up after confirming the production menu.

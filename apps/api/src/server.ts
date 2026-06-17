@@ -34,7 +34,6 @@ const ConfigSchema = z.object({
   cronSecret: z.string().optional(),
   liffId: z.string().optional(),
   liffChannelId: z.string().optional(),
-  apiBaseUrl: z.string().optional(),
 });
 
 type ApiConfig = z.infer<typeof ConfigSchema>;
@@ -63,7 +62,6 @@ function loadConfig(): ApiConfig {
     cronSecret: env.CRON_SECRET,
     liffId: env.LIFF_ID,
     liffChannelId: env.LIFF_CHANNEL_ID,
-    apiBaseUrl: env.API_BASE_URL ?? (process.env.VERCEL ? "https://line-oa.carry-digital-nomad.in.net" : undefined),
   });
 }
 
@@ -105,12 +103,10 @@ const MODEL_CATALOG = [
     label: "DeepSeek",
     docUrl: "https://api-docs.deepseek.com/quick_start/pricing",
     recommendedModel: "deepseek-v4-flash",
-    models: ["deepseek-v4-flash", "deepseek-v4-pro", "deepseek-chat", "deepseek-reasoner"],
+    models: ["deepseek-v4-flash", "deepseek-v4-pro"],
     modelOptions: [
       { id: "deepseek-v4-flash", label: "DeepSeek V4 Flash", status: "stable", note: "官方新模型，優先建議" },
-      { id: "deepseek-v4-pro", label: "DeepSeek V4 Pro", status: "stable", note: "較高能力，成本較高" },
-      { id: "deepseek-chat", label: "deepseek-chat", status: "legacy", note: "將於 2026-07-24 淘汰，保留相容性" },
-      { id: "deepseek-reasoner", label: "deepseek-reasoner", status: "legacy", note: "將於 2026-07-24 淘汰，保留相容性" }
+      { id: "deepseek-v4-pro", label: "DeepSeek V4 Pro", status: "stable", note: "較高能力，成本較高" }
     ]
   }
 ] as const;
@@ -746,7 +742,6 @@ export async function createApp() {
 
   fastify.get("/liff/config", async () => ({
     ok: true,
-    apiBaseUrl: config.apiBaseUrl ?? null,
     liffId: config.liffId ?? null,
     liffChannelIdConfigured: Boolean(config.liffChannelId),
     b2cRequireUserAi: config.b2cRequireUserAi,
