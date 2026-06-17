@@ -60,6 +60,9 @@
   - readable error message when save fails
 - Removed the LIFF `apiBaseUrl` override and kept LIFF API calls on same-origin relative paths to avoid wrong-origin `Not Found` errors.
 - Improved AI settings save errors so users can tell whether the AI key/model step or bot settings step failed.
+- Added an AI management section in LIFF so users can see currently bound provider, model, masked API key, and enabled status.
+- Added a full-page LIFF loader so workspace/model data is ready before showing the settings form.
+- Hid playground/admin-only blocks from the regular LIFF user page; `/admin` still keeps admin tools.
 
 ## Verification
 
@@ -77,3 +80,4 @@
 - Model catalog and OpenAI/DeepSeek composer tests cover the updated provider model behavior.
 - LIFF admin page test now covers AI settings save feedback elements and messages.
 - LIFF model catalog tests now verify DeepSeek only exposes stable V4 models.
+- LIFF workspace tests now verify API keys are never returned raw and only appear as masked values.

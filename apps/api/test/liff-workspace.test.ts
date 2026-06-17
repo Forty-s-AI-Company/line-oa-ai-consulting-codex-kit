@@ -52,6 +52,16 @@ describe("LIFF workspace binding", () => {
     expect(ownerAi.statusCode).toBe(200);
     expect(JSON.stringify(ownerAi.json())).not.toContain("fake-test-key");
 
+    const meAfterAi = await app.fastify.inject({
+      method: "GET",
+      url: "/liff/me",
+      headers: { "x-test-line-user-id": lineUserId }
+    });
+    expect(meAfterAi.statusCode).toBe(200);
+    const meAfterAiText = JSON.stringify(meAfterAi.json());
+    expect(meAfterAiText).not.toContain("fake-test-key");
+    expect(meAfterAi.json().workspaces.find((w: { id: string }) => w.id === claimedBody.workspace.id).ai.maskedApiKey).toMatch(/^fake\*+-key$/);
+
     const otherSettings = await app.fastify.inject({
       method: "PUT",
       url: `/liff/workspaces/${claimedBody.workspace.id}/settings`,

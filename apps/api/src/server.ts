@@ -127,10 +127,14 @@ function workspacePublicShape(w: {
   mode: string;
   ownerLineUserId: string | null;
   isDefault: boolean;
-  aiCredential?: { provider: string; model: string; enabled: boolean } | null;
+  aiCredential?: { provider: string; model: string; enabled: boolean; encryptedApiKey?: string } | null;
   botSettings?: { tone: string; topK: number; safetyLevel: string; autoReplyEnabled: boolean } | null;
   lineChannels?: Array<{ id: string; channelId: string | null; destination: string | null; basicId: string | null; enabled: boolean }>;
+  encryptionKey?: string;
 }) {
+  const maskedApiKey = w.aiCredential?.encryptedApiKey && w.encryptionKey
+    ? maskSecret(decryptSecret(w.aiCredential.encryptedApiKey, w.encryptionKey))
+    : undefined;
   return {
     id: w.id,
     name: w.name,
@@ -138,11 +142,17 @@ function workspacePublicShape(w: {
     ownerLineUserId: w.ownerLineUserId,
     isDefault: w.isDefault,
     ai: w.aiCredential
-      ? { provider: w.aiCredential.provider, model: w.aiCredential.model, enabled: w.aiCredential.enabled, apiKeyConfigured: true }
+      ? { provider: w.aiCredential.provider, model: w.aiCredential.model, enabled: w.aiCredential.enabled, apiKeyConfigured: true, maskedApiKey }
       : { apiKeyConfigured: false },
     settings: w.botSettings,
     lineChannels: w.lineChannels ?? []
   };
+}
+
+function maskSecret(value: string): string {
+  const trimmed = value.trim();
+  if (trimmed.length <= 10) return `${trimmed.slice(0, 2)}${"*".repeat(Math.max(4, trimmed.length - 4))}${trimmed.slice(-2)}`;
+  return `${trimmed.slice(0, 4)}${"*".repeat(Math.min(24, Math.max(8, trimmed.length - 8)))}${trimmed.slice(-4)}`;
 }
 
 function getBearerToken(request: FastifyRequest): string | undefined {
@@ -545,7 +555,7 @@ async function findOwnedWorkspace(prisma: ReturnType<typeof getPrisma>, lineUser
     },
     orderBy: { createdAt: "asc" },
     include: {
-      aiCredential: { select: { provider: true, model: true, enabled: true } },
+      aiCredential: { select: { provider: true, model: true, enabled: true, encryptedApiKey: true } },
       botSettings: { select: { tone: true, topK: true, safetyLevel: true, autoReplyEnabled: true } },
       lineChannels: { select: { id: true, channelId: true, destination: true, basicId: true, enabled: true } }
     }
@@ -562,12 +572,18 @@ async function getLiffVisibleWorkspaces(config: ApiConfig, prisma: ReturnType<ty
     },
     orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
     include: {
-      aiCredential: { select: { provider: true, model: true, enabled: true } },
+      aiCredential: { select: { provider: true, model: true, enabled: true, encryptedApiKey: true } },
       botSettings: { select: { tone: true, topK: true, safetyLevel: true, autoReplyEnabled: true } },
       lineChannels: { select: { id: true, channelId: true, destination: true, basicId: true, enabled: true } }
     }
   });
-  return workspaces.map(workspacePublicShape);
+  return workspaces.map((workspace) =>
+    workspacePublicShape({
+      ...workspace,
+      aiCredential: workspace.isDefault ? null : workspace.aiCredential,
+      encryptionKey: config.encryptionKey
+    })
+  );
 }
 
 async function ensureWorkspaceOwner(input: {
@@ -733,7 +749,7 @@ export async function createApp() {
   }));
 
   fastify.get("/admin", async (_request, reply) => {
-    return reply.type("text/html; charset=utf-8").send(renderAdminHtmlPage());
+    return reply.type("text/html; charset=utf-8").send(renderAdminHtmlPage({ showAdminTools: true }));
   });
 
   fastify.get("/liff/admin", async (_request, reply) => {

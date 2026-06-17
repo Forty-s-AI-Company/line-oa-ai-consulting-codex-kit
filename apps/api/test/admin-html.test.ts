@@ -11,7 +11,7 @@ describe("admin html", () => {
     process.env.LIFF_CHANNEL_ID = "test-channel-id";
   });
 
-  test("serves the LIFF B2C setup page with save feedback states", async () => {
+  test("serves the LIFF B2C setup page without admin-only tools", async () => {
     const app = await createApp();
     const res = await app.fastify.inject({ method: "GET", url: "/liff/admin" });
 
@@ -19,17 +19,25 @@ describe("admin html", () => {
     expect(res.headers["content-type"]).toContain("text/html");
     expect(res.body).toContain("PureFit AI 健康顧問設定");
     expect(res.body).toContain("static.line-scdn.net/liff");
-    expect(res.body).toContain("ChatGPT");
-    expect(res.body).toContain("DeepSeek");
-    expect(res.body).toContain("escapeHtml");
+    expect(res.body).toContain("正在載入你的 AI 設定");
+    expect(res.body).toContain("AI 管理");
+    expect(res.body).toContain("maskedApiKey");
     expect(res.body).toContain('id="saveAiButton"');
     expect(res.body).toContain('id="saveAiFeedback"');
+    expect(res.body).not.toContain('id="adminTools"');
+    expect(res.body).not.toContain("送出測試");
     expect(res.body).not.toContain("apiBaseUrl");
-    expect(res.body).toContain("儲存中...");
-    expect(res.body).toContain("AI 設定已儲存成功");
-    expect(res.body).toContain("儲存失敗：");
-    expect(res.body).toContain("儲存 AI Key / 模型");
-    expect(res.body).toContain("儲存回答設定");
+
+    await app.fastify.close();
+  });
+
+  test("keeps admin-only tools on the admin page", async () => {
+    const app = await createApp();
+    const res = await app.fastify.inject({ method: "GET", url: "/admin" });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toContain('id="adminTools"');
+    expect(res.body).toContain("讀取 Workspaces");
 
     await app.fastify.close();
   });
