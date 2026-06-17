@@ -19,6 +19,7 @@
     "db:postgres:generate": "pnpm -C packages/db prisma generate --schema prisma/schema.postgres.prisma",
     "db:postgres:push": "pnpm -C packages/db prisma db push --schema prisma/schema.postgres.prisma",
     "db:postgres:seed": "pnpm -C packages/db prisma db seed --schema prisma/schema.postgres.prisma",
+    "line:rich-menu:b2c": "node scripts/line-rich-menu-b2c.mjs",
     "lint": "pnpm -r --workspace-concurrency=1 lint",
     "pretest": "pnpm db:push",
     "test": "pnpm -r --workspace-concurrency=1 test"

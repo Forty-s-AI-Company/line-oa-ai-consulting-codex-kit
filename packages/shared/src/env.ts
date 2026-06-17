@@ -21,6 +21,9 @@ export const EnvSchema = z.object({
   AI_TIMEOUT_MS: z.string().optional(),
   PLATFORM_GEMINI_API_KEY: z.string().optional(),
   PLATFORM_GEMINI_MODEL: z.string().optional(),
+  B2C_REQUIRE_USER_AI: z.string().optional(),
+  MODEL_CATALOG_UPDATING: z.string().optional(),
+  CRON_SECRET: z.string().optional(),
   LIFF_ID: z.string().optional(),
   LIFF_CHANNEL_ID: z.string().optional()
 });

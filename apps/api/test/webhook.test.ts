@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, test } from "vitest";
+import { afterEach, beforeAll, describe, expect, test } from "vitest";
 import { createApp } from "../src/server.js";
 
 describe("LINE webhook RAG entry", () => {
@@ -6,6 +6,11 @@ describe("LINE webhook RAG entry", () => {
     process.env.ENABLE_MOCK_MODE = "true";
     process.env.ADMIN_API_KEY = "dev-admin-key";
     process.env.MOCK_KB_PATH = "./examples/mock-kb.json";
+  });
+
+  afterEach(() => {
+    delete process.env.B2C_REQUIRE_USER_AI;
+    delete process.env.MODEL_CATALOG_UPDATING;
   });
 
   test("accepts a LINE text event and returns a mock reply", async () => {
@@ -34,6 +39,33 @@ describe("LINE webhook RAG entry", () => {
     const body = res.json();
     expect(body.ok).toBe(true);
     expect(body.results[0].replyText).toEqual(expect.any(String));
+    await app.fastify.close();
+  });
+
+  test("asks B2C users to configure AI before answering", async () => {
+    process.env.B2C_REQUIRE_USER_AI = "true";
+    const app = await createApp();
+
+    const res = await app.fastify.inject({
+      method: "POST",
+      url: "/webhooks/line",
+      headers: { "content-type": "application/json" },
+      payload: JSON.stringify({
+        destination: "U-destination",
+        events: [
+          {
+            type: "message",
+            replyToken: "reply-token",
+            timestamp: Date.now(),
+            source: { type: "user", userId: `U-b2c-${Date.now()}` },
+            message: { id: "m1", type: "text", text: "外食族怎麼補充營養？" }
+          }
+        ]
+      })
+    });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.json().results[0].replyText).toContain("請到設定設置AI");
     await app.fastify.close();
   });
 });

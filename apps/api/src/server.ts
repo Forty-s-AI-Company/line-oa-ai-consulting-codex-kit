@@ -4,6 +4,7 @@ import { z } from "zod";
 import type { FastifyReply, FastifyRequest } from "fastify";
 import {
   GeminiAnswerComposer,
+  OpenAICompatibleAnswerComposer,
   RuleBasedIntentRouter,
   RuleBasedSafetyGuard,
   SimpleAnswerComposer,
@@ -28,6 +29,9 @@ const ConfigSchema = z.object({
   aiTimeoutMs: z.number().int().positive(),
   platformGeminiApiKey: z.string().optional(),
   platformGeminiModel: z.string(),
+  b2cRequireUserAi: z.boolean(),
+  modelCatalogUpdating: z.boolean(),
+  cronSecret: z.string().optional(),
   liffId: z.string().optional(),
   liffChannelId: z.string().optional(),
 });
@@ -53,10 +57,36 @@ function loadConfig(): ApiConfig {
     aiTimeoutMs: Number(env.AI_TIMEOUT_MS ?? "20000"),
     platformGeminiApiKey: env.PLATFORM_GEMINI_API_KEY,
     platformGeminiModel: env.PLATFORM_GEMINI_MODEL ?? "gemini-2.5-flash",
+    b2cRequireUserAi: envBool(env.B2C_REQUIRE_USER_AI, false),
+    modelCatalogUpdating: envBool(env.MODEL_CATALOG_UPDATING, false),
+    cronSecret: env.CRON_SECRET,
     liffId: env.LIFF_ID,
     liffChannelId: env.LIFF_CHANNEL_ID,
   });
 }
+
+const AI_SETUP_REPLY =
+  "請到設定設置AI。\n\n請點選下方圖文選單的「AI 設定」，登入後選擇 ChatGPT、Gemini 或 DeepSeek，並填入你自己的 API Key。設定完成後，再回來問我健康或營養問題。";
+
+const MODEL_UPDATE_REPLY = "系統模型清單更新中，請稍後再試。";
+
+const MODEL_CATALOG = [
+  {
+    provider: "gemini",
+    label: "Gemini",
+    models: ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-1.5-flash"]
+  },
+  {
+    provider: "openai",
+    label: "ChatGPT / OpenAI",
+    models: ["gpt-4.1-mini", "gpt-4.1", "gpt-4o-mini"]
+  },
+  {
+    provider: "deepseek",
+    label: "DeepSeek",
+    models: ["deepseek-chat", "deepseek-reasoner"]
+  }
+] as const;
 
 type LiffUser = {
   lineUserId: string;
@@ -579,7 +609,10 @@ async function createComposerForWorkspace(input: {
   // Mode B: the shared default workspace can use the platform AI key.
   // Dedicated workspaces still require BYOK, so one user's usage does not burn the platform budget.
   const platformCredential =
-    !credential && input.workspaceId === input.config.defaultWorkspaceId && input.config.platformGeminiApiKey
+    !input.config.b2cRequireUserAi &&
+    !credential &&
+    input.workspaceId === input.config.defaultWorkspaceId &&
+    input.config.platformGeminiApiKey
       ? {
           provider: "gemini",
           model: input.config.platformGeminiModel,
@@ -588,17 +621,48 @@ async function createComposerForWorkspace(input: {
       : null;
 
   if (!credential?.enabled && !platformCredential) return fallback;
-  if (credential && credential.provider !== "gemini") return fallback;
 
-  const geminiOpts: ConstructorParameters<typeof GeminiAnswerComposer>[0] = {
-    apiKey: platformCredential?.apiKey ?? decryptSecret(credential!.encryptedApiKey, input.config.encryptionKey),
-    model: platformCredential?.model ?? credential!.model,
+  const provider = platformCredential?.provider ?? credential!.provider;
+  const model = platformCredential?.model ?? credential!.model;
+  const apiKey = platformCredential?.apiKey ?? decryptSecret(credential!.encryptedApiKey, input.config.encryptionKey);
+
+  const commonOpts = {
+    apiKey,
+    model,
     timeoutMs: input.config.aiTimeoutMs,
-    fallback
+    fallback,
+    ...(settings?.tone ? { tone: settings.tone } : {}),
+    ...(settings?.systemPrompt ? { systemPrompt: settings.systemPrompt } : {})
   };
-  if (settings?.tone) geminiOpts.tone = settings.tone;
-  if (settings?.systemPrompt) geminiOpts.systemPrompt = settings.systemPrompt;
-  return new GeminiAnswerComposer(geminiOpts);
+
+  if (provider === "gemini") return new GeminiAnswerComposer(commonOpts);
+  if (provider === "openai") return new OpenAICompatibleAnswerComposer({ ...commonOpts, baseUrl: "https://api.openai.com/v1" });
+  if (provider === "deepseek") return new OpenAICompatibleAnswerComposer({ ...commonOpts, baseUrl: "https://api.deepseek.com" });
+
+  return fallback;
+}
+
+async function workspaceHasEnabledAiCredential(input: {
+  prisma: ReturnType<typeof getPrisma>;
+  workspaceId: string;
+}): Promise<boolean> {
+  const credential = await input.prisma.aiProviderCredential.findUnique({
+    where: { workspaceId: input.workspaceId },
+    select: { enabled: true }
+  });
+  return Boolean(credential?.enabled);
+}
+
+async function b2cGateReply(input: {
+  config: ApiConfig;
+  prisma: ReturnType<typeof getPrisma>;
+  workspaceId: string;
+}): Promise<string | undefined> {
+  if (input.config.modelCatalogUpdating) return MODEL_UPDATE_REPLY;
+  if (!input.config.b2cRequireUserAi) return undefined;
+  return (await workspaceHasEnabledAiCredential({ prisma: input.prisma, workspaceId: input.workspaceId }))
+    ? undefined
+    : AI_SETUP_REPLY;
 }
 
 function rawBodyToString(raw: unknown): string {
@@ -649,8 +713,32 @@ export async function createApp() {
   fastify.get("/liff/config", async () => ({
     ok: true,
     liffId: config.liffId ?? null,
-    liffChannelIdConfigured: Boolean(config.liffChannelId)
+    liffChannelIdConfigured: Boolean(config.liffChannelId),
+    b2cRequireUserAi: config.b2cRequireUserAi,
+    modelCatalogUpdating: config.modelCatalogUpdating
   }));
+
+  fastify.get("/liff/model-catalog", async () => ({
+    ok: true,
+    updating: config.modelCatalogUpdating,
+    providers: MODEL_CATALOG
+  }));
+
+  fastify.get("/cron/update-model-catalog", async (request, reply) => {
+    if (config.cronSecret) {
+      const header = request.headers.authorization;
+      if (header !== `Bearer ${config.cronSecret}`) return reply.code(401).send({ ok: false, error: "unauthorized" });
+    }
+
+    return reply.send({
+      ok: true,
+      updatedAt: new Date().toISOString(),
+      providers: MODEL_CATALOG.map((provider) => ({
+        provider: provider.provider,
+        modelCount: provider.models.length
+      }))
+    });
+  });
 
   fastify.get("/liff/me", async (request, reply) => {
     const user = await requireLiffUser(config, request, reply);
@@ -747,7 +835,7 @@ export async function createApp() {
     if (!workspace) return reply.code(403).send({ ok: false, error: "workspace access denied" });
 
     const BodySchema = z.object({
-      provider: z.enum(["gemini"]).default("gemini"),
+      provider: z.enum(["gemini", "openai", "deepseek"]).default("gemini"),
       model: z.string().min(1).default("gemini-2.5-flash"),
       apiKey: z.string().min(1).optional(),
       enabled: z.boolean().default(true),
@@ -760,7 +848,7 @@ export async function createApp() {
     if (!existing && !parsed.data.apiKey) return reply.code(400).send({ ok: false, error: "apiKey required for first setup" });
 
     const updateData: {
-      provider: "gemini";
+      provider: string;
       model: string;
       enabled: boolean;
       monthlyBudgetLimit?: number | null;
@@ -777,7 +865,7 @@ export async function createApp() {
 
     const createData: {
       workspaceId: string;
-      provider: "gemini";
+      provider: string;
       model: string;
       enabled: boolean;
       monthlyBudgetLimit?: number | null;
@@ -883,7 +971,7 @@ export async function createApp() {
   fastify.put<{ Params: { id: string }; Body: unknown }>("/admin/workspaces/:id/ai", async (request, reply) => {
     if (!adminAuth(config, request)) return reply.code(401).send({ ok: false, error: "unauthorized" });
     const BodySchema = z.object({
-      provider: z.enum(["gemini"]).default("gemini"),
+      provider: z.enum(["gemini", "openai", "deepseek"]).default("gemini"),
       model: z.string().min(1).default("gemini-2.5-flash"),
       apiKey: z.string().min(1).optional(),
       enabled: z.boolean().default(true),
@@ -894,7 +982,7 @@ export async function createApp() {
     const existing = await prisma.aiProviderCredential.findUnique({ where: { workspaceId: request.params.id } });
     if (!existing && !parsed.data.apiKey) return reply.code(400).send({ ok: false, error: "apiKey required for first setup" });
     const aiUpdateData: {
-      provider: "gemini";
+      provider: string;
       model: string;
       enabled: boolean;
       monthlyBudgetLimit?: number | null;
@@ -910,7 +998,7 @@ export async function createApp() {
     if (parsed.data.apiKey) aiUpdateData.encryptedApiKey = encryptSecret(parsed.data.apiKey, config.encryptionKey);
     const aiCreateData: {
       workspaceId: string;
-      provider: "gemini";
+      provider: string;
       model: string;
       enabled: boolean;
       monthlyBudgetLimit?: number | null;
@@ -1024,6 +1112,23 @@ export async function createApp() {
         activeWorkspaceId: active.workspaceId,
         lineUserId
       });
+      const gateReply = await b2cGateReply({ config, prisma, workspaceId });
+      if (gateReply) {
+        const replyInput: { replyToken: string; text: string; accessToken?: string } = {
+          replyToken: event.replyToken,
+          text: gateReply
+        };
+        if (active.channelAccessToken) replyInput.accessToken = active.channelAccessToken;
+        await replyToLine(config, replyInput);
+        results.push({
+          ok: true,
+          messageId: "b2c-gate",
+          conversationId: workspaceId,
+          replyText: gateReply
+        });
+        continue;
+      }
+
       const composer = await createComposerForWorkspace({ config, prisma, workspaceId });
       const pipeline = new MessagePipeline({
         prisma,
@@ -1078,6 +1183,19 @@ export async function createApp() {
     if (workspaceId !== config.defaultWorkspaceId) {
       const workspace = await ensureWorkspaceOwner({ prisma, workspaceId, lineUserId: user.lineUserId });
       if (!workspace) return reply.code(403).send({ ok: false, error: "workspace access denied" });
+    }
+
+    const gateReply = await b2cGateReply({ config, prisma, workspaceId });
+    if (gateReply) {
+      return reply.send({
+        ok: true,
+        inputMessage: parsed.data.message,
+        workspaceId,
+        replyText: gateReply,
+        intent: null,
+        retrieved: [],
+        answer: { text: gateReply, citations: [] }
+      });
     }
 
     const composer = await createComposerForWorkspace({ config, prisma, workspaceId });

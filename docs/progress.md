@@ -40,6 +40,12 @@
 - Bootstrapped Supabase schema and seed data from SQL Editor with RLS enabled.
 - Added Mode B platform Gemini support for the shared default workspace using `PLATFORM_GEMINI_API_KEY`.
 - Kept Mode A BYOK behavior for dedicated workspaces so users can use their own AI key.
+- Added B2C mode gate with `B2C_REQUIRE_USER_AI=true`: users without their own AI key receive a fixed setup prompt.
+- Reworked `/liff/admin` into a mobile-first B2C AI setup page.
+- Added LIFF model catalog endpoint for Gemini, ChatGPT/OpenAI, and DeepSeek.
+- Added OpenAI-compatible composer for ChatGPT/OpenAI and DeepSeek.
+- Added LINE rich menu B2C layout documentation and creation script.
+- Added off-peak Vercel cron endpoint for model catalog refresh checks.
 
 ## Verification
 
@@ -52,3 +58,4 @@
 - LIFF/Admin page smoke test covers LIFF SDK loading and HTML escaping helper presence.
 - Production DB is now backed by Supabase Postgres.
 - Mode B platform AI requires `PLATFORM_GEMINI_API_KEY` in Vercel production env before shared users receive LLM-generated answers.
+- B2C mode can now require per-user AI setup before answering LINE messages.
