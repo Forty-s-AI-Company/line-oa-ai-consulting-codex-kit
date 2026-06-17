@@ -81,15 +81,14 @@ export class MessagePipeline {
       ? await this.deps.retrieval.search({ query: input.text, domain: intent.domain, topK: 5 })
       : [];
 
-    // For MVP, "draft" is the composed answer pre-safety; the composer will add safety text.
-    const draftText = (
-      await this.deps.composer.compose({
-      userMessage: input.text,
-      intent,
-      retrieved,
-      safety: { action: "allow", riskLevel: "low", reasons: [], hints: [] }
-      })
-    ).text;
+    // Keep safety inspection lightweight. Calling an external LLM here would double
+    // latency and can push LINE/Vercel webhooks into timeout territory.
+    const draftText =
+      retrieved
+        .slice(0, 3)
+        .map((chunk) => chunk.content)
+        .join("\n")
+        .slice(0, 1200) || input.text;
 
     const safetyDecision = this.deps.safety.inspect({
       userMessage: input.text,
