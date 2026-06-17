@@ -46,6 +46,9 @@
 - Added OpenAI-compatible composer for ChatGPT/OpenAI and DeepSeek.
 - Added LINE rich menu B2C layout documentation and creation script.
 - Added off-peak Vercel cron endpoint for model catalog refresh checks.
+- Added LINE production credentials to Vercel production as Sensitive env vars without storing secrets in the repo.
+- Created and applied the default B2C LINE rich menu for the official account.
+- Fixed the rich menu image upload script to use LINE's `api-data.line.me` upload host.
 
 ## Verification
 
@@ -59,3 +62,4 @@
 - Production DB is now backed by Supabase Postgres.
 - Mode B platform AI requires `PLATFORM_GEMINI_API_KEY` in Vercel production env before shared users receive LLM-generated answers.
 - B2C mode can now require per-user AI setup before answering LINE messages.
+- B2C rich menu has been created in LINE and linked to the LIFF setup page.

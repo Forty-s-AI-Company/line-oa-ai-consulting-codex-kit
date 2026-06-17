@@ -5,7 +5,6 @@
 - Add `PLATFORM_GEMINI_API_KEY` to Vercel production env for Mode B shared AI.
 - Add `PLATFORM_GEMINI_MODEL` to Vercel production env if a model other than `gemini-2.5-flash` is desired.
 - Set `B2C_REQUIRE_USER_AI=true` in production when switching from testing mode to B2C BYOK mode.
-- Upload a polished rich menu image and run `scripts/line-rich-menu-b2c.mjs`.
 - Set a strong production `ADMIN_API_KEY`; do not keep `dev-admin-key`.
 - Set production `LIFF_ID` and `LIFF_CHANNEL_ID` environment variables.
 - Add per-workspace usage logging and quota checks before calling external AI providers.
@@ -29,3 +28,4 @@
 - Replace static model catalog with real provider model API refresh and persist the latest catalog in DB.
 - Add webhook diagnostics page for recent LINE events.
 - Add alerting for failed LINE replies and AI provider errors.
+- Add a safe rich menu rotation script so old test rich menus can be cleaned up after confirming the production menu.

@@ -13,19 +13,19 @@ const richMenu = {
   size: { width: 2500, height: 1686 },
   selected: true,
   name: "PureFit AI B2C Menu",
-  chatBarText: "AI健康顧問",
+  chatBarText: "AI 健康顧問",
   areas: [
-    { bounds: { x: 0, y: 0, width: 833, height: 843 }, action: { type: "uri", label: "AI設定", uri: liffUrl } },
+    { bounds: { x: 0, y: 0, width: 833, height: 843 }, action: { type: "uri", label: "AI 設定", uri: liffUrl } },
     { bounds: { x: 833, y: 0, width: 834, height: 843 }, action: { type: "message", label: "開始提問", text: "我想問健康顧問" } },
     { bounds: { x: 1667, y: 0, width: 833, height: 843 }, action: { type: "message", label: "營養建議", text: "外食族怎麼補充營養？" } },
-    { bounds: { x: 0, y: 843, width: 833, height: 843 }, action: { type: "message", label: "我的狀態", text: "我的AI設定狀態" } },
-    { bounds: { x: 833, y: 843, width: 834, height: 843 }, action: { type: "message", label: "使用教學", text: "怎麼使用AI健康顧問？" } },
+    { bounds: { x: 0, y: 843, width: 833, height: 843 }, action: { type: "message", label: "我的狀態", text: "我的 AI 設定狀態" } },
+    { bounds: { x: 833, y: 843, width: 834, height: 843 }, action: { type: "message", label: "使用教學", text: "怎麼使用 AI 健康顧問？" } },
     { bounds: { x: 1667, y: 843, width: 833, height: 843 }, action: { type: "message", label: "客服協助", text: "我需要客服協助" } }
   ]
 };
 
-async function lineFetch(path, init = {}) {
-  const res = await fetch(`https://api.line.me${path}`, {
+async function lineFetch(path, init = {}, origin = "https://api.line.me") {
+  const res = await fetch(`${origin}${path}`, {
     ...init,
     headers: {
       Authorization: `Bearer ${channelAccessToken}`,
@@ -48,11 +48,13 @@ if (imagePath) {
   const contentType = imagePath.toLowerCase().endsWith(".jpg") || imagePath.toLowerCase().endsWith(".jpeg")
     ? "image/jpeg"
     : "image/png";
+
+  // LINE uses a separate upload host for rich menu image content.
   await lineFetch(`/v2/bot/richmenu/${richMenuId}/content`, {
     method: "POST",
     headers: { "content-type": contentType },
     body: image
-  });
+  }, "https://api-data.line.me");
 }
 
 await lineFetch(`/v2/bot/user/all/richmenu/${richMenuId}`, { method: "POST" });
