@@ -9,13 +9,13 @@ Production should move to Postgres before real multi-user launch because Vercel 
 - Local DB: SQLite at `packages/dev.db`
 - Local schema: `packages/db/prisma/schema.prisma`
 - Production-ready Postgres schema: `packages/db/prisma/schema.postgres.prisma`
-- Production deployment is not switched to Postgres yet.
+- Production deployment uses Supabase Postgres.
 
 ## Selected Provider: Supabase
 
 Use Supabase Postgres for production.
 
-The app is still running on SQLite until the real Supabase connection strings are added.
+The production app is running on Supabase Postgres. Local development still uses SQLite by default.
 
 ## Required Environment Variables
 
@@ -67,8 +67,8 @@ DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE?sslmode=require" DIR
 1. Create a Supabase project.
 2. Copy the transaction pooler connection string and set it as Vercel `DATABASE_URL`.
 3. Copy the direct or session pooler connection string and set it as Vercel `DIRECT_URL`.
-4. Run `pnpm db:postgres:push` against Supabase.
-5. Run `pnpm db:postgres:seed` once to create the default workspace and bot settings.
+4. Run `pnpm db:postgres:push` against Supabase, or execute the generated Prisma SQL in Supabase SQL Editor if secrets cannot be read locally.
+5. Run `pnpm db:postgres:seed`, or execute equivalent seed SQL once to create the default workspace and bot settings.
 6. Deploy. The build script auto-generates Prisma Client from `schema.postgres.prisma` when `DATABASE_URL` starts with `postgres`.
 7. Verify:
    - `/healthz`
@@ -77,6 +77,6 @@ DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE?sslmode=require" DIR
    - LINE webhook reply
    - LIFF workspace claim
 
-## Why Not Switch Automatically Now
+## Current Cutover Notes
 
-Switching production to Supabase requires real connection strings and a production environment change. Until those exist, the safe path is to keep SQLite for local development and prepare the Supabase/Postgres schema separately.
+Vercel sensitive environment variables cannot be pulled back with their plaintext values. If local Prisma commands cannot read the real values, use Supabase SQL Editor for schema bootstrap and seed, then deploy normally so Vercel can use the encrypted production variables at runtime.

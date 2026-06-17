@@ -36,6 +36,10 @@
 - Added production DB migration documentation.
 - Selected Supabase as the production DB target.
 - Added dynamic Prisma generation so API builds use the Postgres schema when `DATABASE_URL` starts with `postgres`.
+- Cut production over to Supabase Postgres via Vercel `DATABASE_URL` / `DIRECT_URL`.
+- Bootstrapped Supabase schema and seed data from SQL Editor with RLS enabled.
+- Added Mode B platform Gemini support for the shared default workspace using `PLATFORM_GEMINI_API_KEY`.
+- Kept Mode A BYOK behavior for dedicated workspaces so users can use their own AI key.
 
 ## Verification
 
@@ -46,5 +50,5 @@
 - Local DB can be initialized with SQLite before moving to a production database.
 - LIFF owner binding is implemented with local SQLite and can be migrated to production Postgres later.
 - LIFF/Admin page smoke test covers LIFF SDK loading and HTML escaping helper presence.
-- Production DB migration is prepared but not yet cut over because no real Postgres connection string is configured.
-- Supabase cutover still needs real `DATABASE_URL` and `DIRECT_URL`.
+- Production DB is now backed by Supabase Postgres.
+- Mode B platform AI requires `PLATFORM_GEMINI_API_KEY` in Vercel production env before shared users receive LLM-generated answers.

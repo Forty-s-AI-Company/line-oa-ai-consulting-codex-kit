@@ -19,6 +19,8 @@ export const EnvSchema = z.object({
   DEFAULT_WORKSPACE_ID: z.string().optional(),
   ENCRYPTION_KEY: z.string().optional(),
   AI_TIMEOUT_MS: z.string().optional(),
+  PLATFORM_GEMINI_API_KEY: z.string().optional(),
+  PLATFORM_GEMINI_MODEL: z.string().optional(),
   LIFF_ID: z.string().optional(),
   LIFF_CHANNEL_ID: z.string().optional()
 });

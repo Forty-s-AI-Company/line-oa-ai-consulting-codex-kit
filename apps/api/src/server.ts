@@ -26,6 +26,8 @@ const ConfigSchema = z.object({
   defaultWorkspaceId: z.string(),
   encryptionKey: z.string(),
   aiTimeoutMs: z.number().int().positive(),
+  platformGeminiApiKey: z.string().optional(),
+  platformGeminiModel: z.string(),
   liffId: z.string().optional(),
   liffChannelId: z.string().optional(),
 });
@@ -49,6 +51,8 @@ function loadConfig(): ApiConfig {
     defaultWorkspaceId: env.DEFAULT_WORKSPACE_ID ?? "default",
     encryptionKey: env.ENCRYPTION_KEY ?? env.ADMIN_API_KEY ?? "dev-admin-key",
     aiTimeoutMs: Number(env.AI_TIMEOUT_MS ?? "20000"),
+    platformGeminiApiKey: env.PLATFORM_GEMINI_API_KEY,
+    platformGeminiModel: env.PLATFORM_GEMINI_MODEL ?? "gemini-2.5-flash",
     liffId: env.LIFF_ID,
     liffChannelId: env.LIFF_CHANNEL_ID,
   });
@@ -572,12 +576,23 @@ async function createComposerForWorkspace(input: {
     input.prisma.botSettings.findUnique({ where: { workspaceId: input.workspaceId } })
   ]);
 
-  if (!credential?.enabled) return fallback;
-  if (credential.provider !== "gemini") return fallback;
+  // Mode B: the shared default workspace can use the platform AI key.
+  // Dedicated workspaces still require BYOK, so one user's usage does not burn the platform budget.
+  const platformCredential =
+    !credential && input.workspaceId === input.config.defaultWorkspaceId && input.config.platformGeminiApiKey
+      ? {
+          provider: "gemini",
+          model: input.config.platformGeminiModel,
+          apiKey: input.config.platformGeminiApiKey
+        }
+      : null;
+
+  if (!credential?.enabled && !platformCredential) return fallback;
+  if (credential && credential.provider !== "gemini") return fallback;
 
   const geminiOpts: ConstructorParameters<typeof GeminiAnswerComposer>[0] = {
-    apiKey: decryptSecret(credential.encryptedApiKey, input.config.encryptionKey),
-    model: credential.model,
+    apiKey: platformCredential?.apiKey ?? decryptSecret(credential!.encryptedApiKey, input.config.encryptionKey),
+    model: platformCredential?.model ?? credential!.model,
     timeoutMs: input.config.aiTimeoutMs,
     fallback
   };

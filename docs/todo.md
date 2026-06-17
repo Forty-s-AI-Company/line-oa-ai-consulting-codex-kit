@@ -2,9 +2,8 @@
 
 ## Required Before Real Multi-User Launch
 
-- Replace the temporary Vercel SQLite runtime database with Supabase Postgres.
-- After a real Supabase `DATABASE_URL` is available, verify Vercel builds generate Prisma Client from `schema.postgres.prisma`.
-- Add Supabase `DATABASE_URL` and `DIRECT_URL` to Vercel production env.
+- Add `PLATFORM_GEMINI_API_KEY` to Vercel production env for Mode B shared AI.
+- Add `PLATFORM_GEMINI_MODEL` to Vercel production env if a model other than `gemini-2.5-flash` is desired.
 - Set a strong production `ADMIN_API_KEY`; do not keep `dev-admin-key`.
 - Set production `LIFF_ID` and `LIFF_CHANNEL_ID` environment variables.
 - Add per-workspace usage logging and quota checks before calling external AI providers.
@@ -24,7 +23,6 @@
 
 ## Operations
 
-- Add production database migration workflow.
-- Add a Postgres migration branch after the local SQLite workflow is stable.
+- Add repeatable production database migration workflow instead of manual SQL Editor bootstrap.
 - Add webhook diagnostics page for recent LINE events.
 - Add alerting for failed LINE replies and AI provider errors.
