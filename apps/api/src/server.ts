@@ -34,6 +34,7 @@ const ConfigSchema = z.object({
   cronSecret: z.string().optional(),
   liffId: z.string().optional(),
   liffChannelId: z.string().optional(),
+  apiBaseUrl: z.string().optional(),
 });
 
 type ApiConfig = z.infer<typeof ConfigSchema>;
@@ -62,6 +63,7 @@ function loadConfig(): ApiConfig {
     cronSecret: env.CRON_SECRET,
     liffId: env.LIFF_ID,
     liffChannelId: env.LIFF_CHANNEL_ID,
+    apiBaseUrl: env.API_BASE_URL ?? (process.env.VERCEL ? "https://line-oa.carry-digital-nomad.in.net" : undefined),
   });
 }
 
@@ -744,6 +746,7 @@ export async function createApp() {
 
   fastify.get("/liff/config", async () => ({
     ok: true,
+    apiBaseUrl: config.apiBaseUrl ?? null,
     liffId: config.liffId ?? null,
     liffChannelIdConfigured: Boolean(config.liffChannelId),
     b2cRequireUserAi: config.b2cRequireUserAi,

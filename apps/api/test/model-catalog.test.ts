@@ -32,4 +32,16 @@ describe("LIFF model catalog", () => {
 
     await app.fastify.close();
   });
+
+  test("returns API base URL for LIFF webview API calls", async () => {
+    process.env.API_BASE_URL = "https://example.test";
+    const app = await createApp();
+    const res = await app.fastify.inject({ method: "GET", url: "/liff/config" });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.json().apiBaseUrl).toBe("https://example.test");
+
+    await app.fastify.close();
+    delete process.env.API_BASE_URL;
+  });
 });

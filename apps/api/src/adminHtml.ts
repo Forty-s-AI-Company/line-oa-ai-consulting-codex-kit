@@ -112,10 +112,12 @@ export function renderAdminHtmlPage(): string {
     let liffReady = false;
     let myWorkspaces = [];
     let modelCatalog = [];
+    let apiBaseUrl = location.hostname === 'liff.line.me' ? 'https://line-oa.carry-digital-nomad.in.net' : location.origin;
 
     const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
     const show = (el, visible) => el.classList.toggle('hidden', !visible);
     const selectedProvider = () => modelCatalog.find((item) => item.provider === myProvider.value) || modelCatalog[0];
+    const apiUrl = (path) => new URL(path, apiBaseUrl).toString();
 
     function setFeedback(target, type, message) {
       target.className = 'feedback show ' + type;
@@ -171,7 +173,7 @@ export function renderAdminHtmlPage(): string {
     }
 
     async function liffApi(path, body, method='POST') {
-      const res = await fetch(path, {
+      const res = await fetch(apiUrl(path), {
         method,
         headers: {'content-type':'application/json','authorization':'Bearer '+liffToken},
         body: body ? JSON.stringify(body) : undefined
@@ -180,7 +182,7 @@ export function renderAdminHtmlPage(): string {
     }
 
     async function adminApi(path, body, method='POST') {
-      const res = await fetch(path, {
+      const res = await fetch(apiUrl(path), {
         method,
         headers: {'content-type':'application/json','x-admin-key':adminKey.value},
         body: body ? JSON.stringify(body) : undefined
@@ -198,9 +200,10 @@ export function renderAdminHtmlPage(): string {
 
     async function initLiff(){
       const [cfg, catalog] = await Promise.all([
-        fetch('/liff/config').then((res) => res.json()),
-        fetch('/liff/model-catalog').then((res) => res.json())
+        fetch(apiUrl('/liff/config')).then((res) => res.json()),
+        fetch(apiUrl('/liff/model-catalog')).then((res) => res.json())
       ]);
+      if (cfg.apiBaseUrl) apiBaseUrl = cfg.apiBaseUrl;
       modelCatalog = catalog.providers || [];
       renderProviderOptions();
 
@@ -249,17 +252,25 @@ export function renderAdminHtmlPage(): string {
       setFeedback(saveAiFeedback, 'loading', '正在儲存 AI 設定，請稍候...');
 
       try {
-        await liffApi('/liff/workspaces/'+encodeURIComponent(myWorkspace.value)+'/ai', {
-          provider: myProvider.value,
-          model: myModel.value,
-          apiKey: myApiKey.value || undefined,
-          enabled: true
-        });
-        await liffApi('/liff/workspaces/'+encodeURIComponent(myWorkspace.value)+'/settings', {
-          tone: myTone.value,
-          systemPrompt: mySystemPrompt.value,
-          autoReplyEnabled: true
-        });
+        try {
+          await liffApi('/liff/workspaces/'+encodeURIComponent(myWorkspace.value)+'/ai', {
+            provider: myProvider.value,
+            model: myModel.value,
+            apiKey: myApiKey.value || undefined,
+            enabled: true
+          });
+        } catch (error) {
+          throw new Error('儲存 AI Key / 模型失敗：' + getErrorMessage(error));
+        }
+        try {
+          await liffApi('/liff/workspaces/'+encodeURIComponent(myWorkspace.value)+'/settings', {
+            tone: myTone.value,
+            systemPrompt: mySystemPrompt.value,
+            autoReplyEnabled: true
+          });
+        } catch (error) {
+          throw new Error('儲存回答設定失敗：' + getErrorMessage(error));
+        }
         myApiKey.value = '';
         await refreshMe();
         setFeedback(saveAiFeedback, 'success', 'AI 設定已儲存成功。你現在可以回到 LINE 提問。');
