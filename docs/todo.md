@@ -3,7 +3,7 @@
 ## Required Before Real Multi-User Launch
 
 - Add `PLATFORM_GEMINI_API_KEY` to Vercel production env for Mode B shared AI.
-- Add `PLATFORM_GEMINI_MODEL` to Vercel production env if a model other than `gemini-2.5-flash` is desired.
+- Add `PLATFORM_GEMINI_MODEL` to Vercel production env if a model other than `gemini-3.5-flash` is desired.
 - Set `B2C_REQUIRE_USER_AI=true` in production when switching from testing mode to B2C BYOK mode.
 - Set a strong production `ADMIN_API_KEY`; do not keep `dev-admin-key`.
 - Set production `LIFF_ID` and `LIFF_CHANNEL_ID` environment variables.
@@ -19,13 +19,14 @@
   - Paste Gemini API key.
   - Test one question.
   - Show LINE channel connection status.
-- Add AI provider choices beyond Gemini after the credential model is stabilized.
+- Add per-provider model help text in the LIFF UI so users understand cost and stability tradeoffs before saving a model.
 - Add billing/cost dashboard per workspace.
 
 ## Operations
 
 - Add repeatable production database migration workflow instead of manual SQL Editor bootstrap.
 - Replace static model catalog with real provider model API refresh and persist the latest catalog in DB.
+- Add a compatibility migration notice for users still using DeepSeek legacy `deepseek-chat` / `deepseek-reasoner` before 2026-07-24.
 - Add webhook diagnostics page for recent LINE events.
 - Add alerting for failed LINE replies and AI provider errors.
 - Add a safe rich menu rotation script so old test rich menus can be cleaned up after confirming the production menu.

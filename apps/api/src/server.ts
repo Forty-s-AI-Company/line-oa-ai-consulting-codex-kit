@@ -56,7 +56,7 @@ function loadConfig(): ApiConfig {
     encryptionKey: env.ENCRYPTION_KEY ?? env.ADMIN_API_KEY ?? "dev-admin-key",
     aiTimeoutMs: Number(env.AI_TIMEOUT_MS ?? "20000"),
     platformGeminiApiKey: env.PLATFORM_GEMINI_API_KEY,
-    platformGeminiModel: env.PLATFORM_GEMINI_MODEL ?? "gemini-2.5-flash",
+    platformGeminiModel: env.PLATFORM_GEMINI_MODEL ?? "gemini-3.5-flash",
     b2cRequireUserAi: envBool(env.B2C_REQUIRE_USER_AI, false),
     modelCatalogUpdating: envBool(env.MODEL_CATALOG_UPDATING, false),
     cronSecret: env.CRON_SECRET,
@@ -74,17 +74,42 @@ const MODEL_CATALOG = [
   {
     provider: "gemini",
     label: "Gemini",
-    models: ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-1.5-flash"]
+    docUrl: "https://ai.google.dev/gemini-api/docs/models?hl=zh-tw",
+    recommendedModel: "gemini-3.5-flash",
+    models: ["gemini-3.5-flash", "gemini-3.1-flash-lite", "gemini-2.5-flash", "gemini-2.5-pro"],
+    modelOptions: [
+      { id: "gemini-3.5-flash", label: "Gemini 3.5 Flash", status: "stable", note: "最新穩定，優先建議一般問答使用" },
+      { id: "gemini-3.1-flash-lite", label: "Gemini 3.1 Flash-Lite", status: "stable", note: "低延遲、低成本" },
+      { id: "gemini-2.5-flash", label: "Gemini 2.5 Flash", status: "stable", note: "相容既有設定" },
+      { id: "gemini-2.5-pro", label: "Gemini 2.5 Pro", status: "stable", note: "較適合複雜推理" }
+    ]
   },
   {
     provider: "openai",
     label: "ChatGPT / OpenAI",
-    models: ["gpt-4.1-mini", "gpt-4.1", "gpt-4o-mini"]
+    docUrl: "https://developers.openai.com/api/docs/models/all",
+    recommendedModel: "gpt-5.4-mini",
+    models: ["gpt-5.4-mini", "gpt-5.4-nano", "gpt-5.5", "gpt-4.1", "gpt-4o-mini"],
+    modelOptions: [
+      { id: "gpt-5.4-mini", label: "GPT-5.4 mini", status: "stable", note: "成本與能力平衡，優先建議" },
+      { id: "gpt-5.4-nano", label: "GPT-5.4 nano", status: "stable", note: "最低成本、簡單問答" },
+      { id: "gpt-5.5", label: "GPT-5.5", status: "stable", note: "高能力模型，成本較高" },
+      { id: "gpt-4.1", label: "GPT-4.1", status: "stable", note: "非 reasoning 舊穩定模型" },
+      { id: "gpt-4o-mini", label: "GPT-4o mini", status: "legacy", note: "舊版低成本模型，保留相容性" }
+    ]
   },
   {
     provider: "deepseek",
     label: "DeepSeek",
-    models: ["deepseek-chat", "deepseek-reasoner"]
+    docUrl: "https://api-docs.deepseek.com/quick_start/pricing",
+    recommendedModel: "deepseek-v4-flash",
+    models: ["deepseek-v4-flash", "deepseek-v4-pro", "deepseek-chat", "deepseek-reasoner"],
+    modelOptions: [
+      { id: "deepseek-v4-flash", label: "DeepSeek V4 Flash", status: "stable", note: "官方新模型，優先建議" },
+      { id: "deepseek-v4-pro", label: "DeepSeek V4 Pro", status: "stable", note: "較高能力，成本較高" },
+      { id: "deepseek-chat", label: "deepseek-chat", status: "legacy", note: "將於 2026-07-24 淘汰，保留相容性" },
+      { id: "deepseek-reasoner", label: "deepseek-reasoner", status: "legacy", note: "將於 2026-07-24 淘汰，保留相容性" }
+    ]
   }
 ] as const;
 
@@ -484,6 +509,11 @@ async function replyToLine(config: ApiConfig, input: { replyToken: string; text:
   }
 }
 
+function isLineVerifyReplyToken(replyToken: string) {
+  // LINE's webhook verification uses dummy reply tokens; do not call the reply API for those events.
+  return /^0{32,}$/.test(replyToken) || /^f{32,}$/i.test(replyToken);
+}
+
 function extractDestination(body: unknown): string | undefined {
   if (!body || typeof body !== "object") return undefined;
   const destination = (body as { destination?: unknown }).destination;
@@ -636,7 +666,9 @@ async function createComposerForWorkspace(input: {
   };
 
   if (provider === "gemini") return new GeminiAnswerComposer(commonOpts);
-  if (provider === "openai") return new OpenAICompatibleAnswerComposer({ ...commonOpts, baseUrl: "https://api.openai.com/v1" });
+  if (provider === "openai") {
+    return new OpenAICompatibleAnswerComposer({ ...commonOpts, baseUrl: "https://api.openai.com/v1", apiMode: "responses" });
+  }
   if (provider === "deepseek") return new OpenAICompatibleAnswerComposer({ ...commonOpts, baseUrl: "https://api.deepseek.com" });
 
   return fallback;
@@ -836,7 +868,7 @@ export async function createApp() {
 
     const BodySchema = z.object({
       provider: z.enum(["gemini", "openai", "deepseek"]).default("gemini"),
-      model: z.string().min(1).default("gemini-2.5-flash"),
+      model: z.string().min(1).default("gemini-3.5-flash"),
       apiKey: z.string().min(1).optional(),
       enabled: z.boolean().default(true),
       monthlyBudgetLimit: z.number().positive().optional()
@@ -972,7 +1004,7 @@ export async function createApp() {
     if (!adminAuth(config, request)) return reply.code(401).send({ ok: false, error: "unauthorized" });
     const BodySchema = z.object({
       provider: z.enum(["gemini", "openai", "deepseek"]).default("gemini"),
-      model: z.string().min(1).default("gemini-2.5-flash"),
+      model: z.string().min(1).default("gemini-3.5-flash"),
       apiKey: z.string().min(1).optional(),
       enabled: z.boolean().default(true),
       monthlyBudgetLimit: z.number().positive().optional()
@@ -1104,6 +1136,16 @@ export async function createApp() {
       if (!maybeText.success) continue;
 
       const event = maybeText.data;
+      if (isLineVerifyReplyToken(event.replyToken)) {
+        results.push({
+          ok: true,
+          messageId: "line-verify",
+          conversationId: active.workspaceId,
+          replyText: ""
+        });
+        continue;
+      }
+
       const lineUserId = event.source.userId;
       if (!lineUserId) continue;
       const workspaceId = await resolveWorkspaceForLineUser({

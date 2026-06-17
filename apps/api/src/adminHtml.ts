@@ -112,7 +112,11 @@ export function renderAdminHtmlPage(): string {
 
     function renderModelOptions(){
       const provider = selectedProvider();
-      myModel.innerHTML = (provider?.models || []).map((model) => '<option value="'+escapeHtml(model)+'">'+escapeHtml(model)+'</option>').join('');
+      const options = provider?.modelOptions || (provider?.models || []).map((model) => ({ id: model, label: model }));
+      myModel.innerHTML = options.map((model) => {
+        const suffix = model.status === 'legacy' ? ' / legacy' : (model.id === provider?.recommendedModel ? ' / 推薦' : '');
+        return '<option value="'+escapeHtml(model.id)+'">'+escapeHtml(model.label || model.id)+escapeHtml(suffix)+'</option>';
+      }).join('');
     }
 
     function renderProviderOptions(){
