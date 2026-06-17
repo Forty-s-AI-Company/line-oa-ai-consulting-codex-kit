@@ -74,6 +74,19 @@ export class GeminiAnswerComposer implements AnswerComposer {
       if (this.opts.tone) promptInput.tone = this.opts.tone;
       if (this.opts.systemPrompt) promptInput.systemPrompt = this.opts.systemPrompt;
       const prompt = buildPrompt(promptInput);
+      const generationConfig: {
+        temperature: number;
+        maxOutputTokens: number;
+        thinkingConfig?: { thinkingBudget: number };
+      } = {
+        temperature: 0.4,
+        maxOutputTokens: 1200
+      };
+      if (this.opts.model.includes("2.5")) {
+        // LINE webhooks need quick final answers; disable Gemini 2.5 thinking to avoid latency and truncated replies.
+        generationConfig.thinkingConfig = { thinkingBudget: 0 };
+      }
+
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
         this.opts.model
       )}:generateContent?key=${encodeURIComponent(this.opts.apiKey)}`;
@@ -83,10 +96,7 @@ export class GeminiAnswerComposer implements AnswerComposer {
         signal: controller.signal,
         body: JSON.stringify({
           contents: [{ role: "user", parts: [{ text: prompt }] }],
-          generationConfig: {
-            temperature: 0.4,
-            maxOutputTokens: 900
-          }
+          generationConfig
         })
       });
 
