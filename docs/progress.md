@@ -54,6 +54,10 @@
   - OpenAI now exposes GPT-5.x era models and uses the Responses API for OpenAI calls.
   - DeepSeek now prioritizes `deepseek-v4-flash` / `deepseek-v4-pro` and marks old names as legacy.
 - Rebuilt the OpenAI-compatible answer composer with clean Traditional Chinese RAG prompts.
+- Rebuilt the LIFF admin page copy into clean Traditional Chinese and added visible save feedback:
+  - loading state while saving AI settings
+  - success message after settings are saved
+  - readable error message when save fails
 
 ## Verification
 
@@ -69,3 +73,4 @@
 - B2C mode can now require per-user AI setup before answering LINE messages.
 - B2C rich menu has been created in LINE and linked to the LIFF setup page.
 - Model catalog and OpenAI/DeepSeek composer tests cover the updated provider model behavior.
+- LIFF admin page test now covers AI settings save feedback elements and messages.

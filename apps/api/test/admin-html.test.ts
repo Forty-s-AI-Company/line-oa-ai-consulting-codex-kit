@@ -11,7 +11,7 @@ describe("admin html", () => {
     process.env.LIFF_CHANNEL_ID = "test-channel-id";
   });
 
-  test("serves the LIFF B2C setup page with LIFF SDK and model choices", async () => {
+  test("serves the LIFF B2C setup page with save feedback states", async () => {
     const app = await createApp();
     const res = await app.fastify.inject({ method: "GET", url: "/liff/admin" });
 
@@ -22,6 +22,11 @@ describe("admin html", () => {
     expect(res.body).toContain("ChatGPT");
     expect(res.body).toContain("DeepSeek");
     expect(res.body).toContain("escapeHtml");
+    expect(res.body).toContain('id="saveAiButton"');
+    expect(res.body).toContain('id="saveAiFeedback"');
+    expect(res.body).toContain("儲存中...");
+    expect(res.body).toContain("AI 設定已儲存成功");
+    expect(res.body).toContain("儲存失敗：");
 
     await app.fastify.close();
   });

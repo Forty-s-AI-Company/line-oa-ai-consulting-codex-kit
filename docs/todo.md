@@ -20,6 +20,7 @@
   - Test one question.
   - Show LINE channel connection status.
 - Add per-provider model help text in the LIFF UI so users understand cost and stability tradeoffs before saving a model.
+- Add inline validation for provider-specific API key format before calling the save API.
 - Add billing/cost dashboard per workspace.
 
 ## Operations
