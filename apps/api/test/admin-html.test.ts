@@ -22,6 +22,8 @@ describe("admin html", () => {
     expect(res.body).toContain("正在載入你的 AI 設定");
     expect(res.body).toContain("AI 管理");
     expect(res.body).toContain("maskedApiKey");
+    expect(res.body).toContain("editWorkspaceSettings");
+    expect(res.body).toContain("編輯設定");
     expect(res.body).toContain('id="saveAiButton"');
     expect(res.body).toContain('id="saveAiFeedback"');
     expect(res.body).not.toContain('id="adminTools"');

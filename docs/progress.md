@@ -61,6 +61,7 @@
 - Removed the LIFF `apiBaseUrl` override and kept LIFF API calls on same-origin relative paths to avoid wrong-origin `Not Found` errors.
 - Improved AI settings save errors so users can tell whether the AI key/model step or bot settings step failed.
 - Added an AI management section in LIFF so users can see currently bound provider, model, masked API key, and enabled status.
+- Added an edit action on each AI management card so users can jump back to the settings form with the current workspace/provider/model loaded.
 - Added a full-page LIFF loader so workspace/model data is ready before showing the settings form.
 - Hid playground/admin-only blocks from the regular LIFF user page; `/admin` still keeps admin tools.
 

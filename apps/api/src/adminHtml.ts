@@ -30,6 +30,7 @@ export function renderAdminHtmlPage(options: { showAdminTools?: boolean } = {}):
     button{width:100%;border:0;border-radius:999px;padding:13px 16px;margin-top:14px;background:var(--leaf);color:white;font-weight:900;font:inherit;cursor:pointer}
     button:disabled{opacity:.72;cursor:not-allowed}
     button.secondary{background:white;color:var(--leaf);border:1px solid var(--leaf)}
+    button.small-action{padding:10px 14px;margin-top:12px;background:var(--moss);color:var(--leaf);border:1px solid #c4d8bd}
     .muted{color:var(--muted);font-size:14px;line-height:1.6}
     .hero{background:radial-gradient(circle at 10% 0%,#ffe1a8 0,#fff8ea 34%,#eef7e8 100%)}
     .pill{display:inline-flex;align-items:center;border-radius:999px;background:var(--moss);padding:7px 11px;margin:4px 6px 4px 0;font-size:13px;font-weight:850;color:var(--leaf)}
@@ -169,6 +170,7 @@ export function renderAdminHtmlPage(options: { showAdminTools?: boolean } = {}):
               + '<div class="manage-row"><strong>模型</strong><span>'+escapeHtml(ai.model || '尚未設定')+'</span></div>'
               + '<div class="manage-row"><strong>API Key</strong><span>'+escapeHtml(ai.maskedApiKey || (ai.apiKeyConfigured ? '已設定' : '尚未設定'))+'</span></div>'
               + '<div class="manage-row"><strong>狀態</strong><span>'+escapeHtml(ai.enabled === false ? '停用' : ai.apiKeyConfigured ? '已啟用' : '待設定')+'</span></div>'
+              + '<button type="button" class="small-action" onclick="editWorkspaceSettings(\\''+escapeHtml(workspace.id)+'\\')">編輯設定</button>'
               + '</div>';
           }).join('')
         : '<p class="muted">目前尚未綁定自己的 AI。請先建立工作區並儲存 AI 設定。</p>';
@@ -179,6 +181,15 @@ export function renderAdminHtmlPage(options: { showAdminTools?: boolean } = {}):
       if (!workspace?.ai?.apiKeyConfigured) return;
       myProvider.value = workspace.ai.provider || myProvider.value;
       renderModelOptions(workspace.ai.model);
+    }
+
+    function editWorkspaceSettings(workspaceId){
+      myWorkspace.value = workspaceId;
+      syncFormWithSelectedWorkspace();
+      clearFeedback(saveAiFeedback);
+      setFeedback(saveAiFeedback, 'loading', '已帶入目前設定。若要更換 API Key，請貼上新的 Key；若只改模型，可留空。');
+      document.querySelector('#saveAiButton')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTimeout(() => myApiKey.focus(), 450);
     }
 
     function renderWorkspaceOptions(){
